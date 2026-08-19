@@ -4,16 +4,18 @@ import {
   shopApi,
   ShopApiError,
   formatShopPrice,
+  isAllowedPaystackCheckoutUrl,
   type ShopAccount,
   type ShopOrder,
   type ShopProduct,
+  type ShopCredits,
 } from '@/lib/shop'
 import { buildWhatsAppLink } from '@/lib/whatsapp'
 import { TELEGRAM_ORDER_URL } from '@/lib/telegram'
 import ShopHeroArt from '@/components/ShopHeroArt.vue'
 import { FARM_PRODUCTS_URL, productImage } from '@/lib/farm'
 
-type Tab = 'shop' | 'orders' | 'connect'
+type Tab = 'shop' | 'credits' | 'orders' | 'connect'
 type AuthMode = 'login' | 'register' | 'forgot'
 
 const loading = ref(true)
@@ -29,6 +31,7 @@ const authMode = ref<AuthMode>('register')
 const account = ref<ShopAccount | null>(null)
 const products = ref<ShopProduct[]>([])
 const orders = ref<ShopOrder[]>([])
+const credits = ref<ShopCredits | null>(null)
 const channels = ref<{ channel: string; name: string | null }[]>([])
 const linkCode = ref('')
 const linkExpiry = ref('')
@@ -103,9 +106,14 @@ async function refreshChannels() {
 
 async function loadAccountData() {
   if (!account.value) return
-  const [orderData, me] = await Promise.all([shopApi.orders(), shopApi.me()])
+  const [orderData, me, creditData] = await Promise.all([
+    shopApi.orders(),
+    shopApi.me(),
+    shopApi.credits(),
+  ])
   orders.value = orderData.orders
   channels.value = me.channels
+  credits.value = creditData.credits
 }
 
 async function submitAuth() {
@@ -181,6 +189,7 @@ async function logout() {
     await shopApi.logout()
     account.value = null
     orders.value = []
+    credits.value = null
     channels.value = []
     linkCode.value = ''
     showLinkForm.value = false
@@ -222,7 +231,13 @@ async function placeOrder() {
     notice.value = `Order ${result.reference} has been received.`
     await loadAccountData()
     activeTab.value = 'orders'
-    if (result.payment?.authorizationUrl) window.location.assign(result.payment.authorizationUrl)
+    if (result.payment?.authorizationUrl) {
+      if (isAllowedPaystackCheckoutUrl(result.payment.authorizationUrl)) {
+        window.location.assign(result.payment.authorizationUrl)
+      } else {
+        notice.value = `Order ${result.reference} has been received. Open Paystack from your order if you still need to pay.`
+      }
+    }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unable to place the order.'
   } finally {
@@ -300,6 +315,16 @@ async function copyLinkCommand() {
   if (!linkCode.value) return
   await navigator.clipboard.writeText(`link ${linkCode.value}`)
   notice.value = 'Link command copied.'
+}
+
+async function copyReferralLink() {
+  if (!credits.value?.referralUrl) return
+  try {
+    await navigator.clipboard.writeText(credits.value.referralUrl)
+    notice.value = 'Referral link copied.'
+  } catch {
+    error.value = 'Your browser could not copy the link. Press and hold the link to copy it.'
+  }
 }
 
 watch(activeTab, (tab) => {
@@ -406,9 +431,13 @@ const tabClass = (on: boolean) =>
     </div>
 
     <div class="mb-8 flex gap-2 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-2" aria-label="Account sections">
-      <button v-for="tab in (['shop', 'orders', 'connect'] as Tab[])" :key="tab" type="button" :class="tabClass(activeTab === tab)" @click="activeTab = tab">
+      <button v-for="tab in (['shop', 'credits', 'orders', 'connect'] as Tab[])" :key="tab" type="button" :class="tabClass(activeTab === tab)" @click="activeTab = tab">
         {{
-          tab === 'orders'
+          tab === 'credits'
+            ? credits
+              ? `Trovara Farm Credits · ${credits.balance.toLocaleString('en-NG')}`
+              : 'Trovara Farm Credits'
+            : tab === 'orders'
             ? `My orders${orders.length ? ` (${orders.length})` : ''}`
             : tab === 'connect'
               ? hasLinkedChannels
@@ -492,6 +521,113 @@ const tabClass = (on: boolean) =>
         </div>
       </aside>
     </div>
+
+    <section v-else-if="activeTab === 'credits'" class="mx-auto max-w-4xl">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">Trovara Farm Credits</p>
+          <h2 class="mt-2 text-2xl font-black text-os-fg">Your rewards</h2>
+        </div>
+        <p class="text-xs text-slate-500">For eligible Trovara Farm products only · Promotional credits, not cash</p>
+      </div>
+
+      <div v-if="!account" :class="cardClass" class="mt-6 text-center">
+        <p class="text-lg font-black text-os-fg">Sign in to view your Trovara Farm Credits</p>
+        <p class="mt-2 text-sm leading-6 text-slate-400">Your balance and personal referral link belong to your shop account.</p>
+        <button type="button" class="mt-5 rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white" @click="setAuthMode('login'); scrollToAccount()">Sign in</button>
+      </div>
+
+      <template v-else-if="credits">
+        <div class="mt-6 grid gap-5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <article class="overflow-hidden rounded-3xl border border-[#889058]/40 bg-[#18311f] p-6 shadow-xl sm:p-8">
+            <div class="flex items-start justify-between gap-5">
+              <div>
+                <p class="text-xs font-black uppercase tracking-[0.22em] text-[#c5ce82]">Available balance</p>
+                <p class="mt-4 text-5xl font-black text-white">{{ credits.balance.toLocaleString('en-NG') }}</p>
+                <p class="mt-2 text-sm font-bold text-slate-300">Trovara Farm Credits</p>
+              </div>
+              <img src="/brand/trovara-credits-symbol.svg" alt="" class="h-20 w-20 shrink-0" />
+            </div>
+          </article>
+
+          <article :class="cardClass">
+            <p class="text-xs font-black uppercase tracking-[0.18em] text-farm-green">Invite someone</p>
+            <h3 class="mt-2 text-xl font-black text-os-fg">Earn {{ credits.referralCredits.toLocaleString('en-NG') }} more Trovara Farm Credits</h3>
+            <p class="mt-3 text-sm leading-6 text-slate-400">
+              Share your link. Your reward stays pending until your referred friend makes their first eligible Trovara Farm purchase and its {{ credits.referralRefundWindowDays }}-day refund period ends without a refund.
+            </p>
+            <div class="mt-5 rounded-2xl bg-slate-950 p-4">
+              <p class="break-all text-sm font-semibold text-farm-green">{{ credits.referralUrl }}</p>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <button type="button" class="min-h-11 rounded-xl bg-farm-green px-5 text-sm font-bold text-white" @click="copyReferralLink">Copy referral link</button>
+              <a :href="`https://wa.me/?text=${encodeURIComponent(`Complete Trovara Farm's food survey with my link: ${credits.referralUrl}`)}`" target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-xl border border-slate-700 px-5 text-sm font-bold text-os-fg">Share on WhatsApp</a>
+            </div>
+          </article>
+        </div>
+
+        <article :class="cardClass" class="mt-5">
+          <h3 class="text-xl font-black text-os-fg">How referrals work</h3>
+          <div class="mt-4 grid gap-3 md:grid-cols-3">
+            <div class="rounded-2xl bg-slate-950 p-4 text-sm leading-6 text-slate-400">
+              <span class="font-black text-farm-green">1. Refer</span>
+              <p class="mt-1">Your friend completes the Trovara Farm survey using your personal link and activates their account.</p>
+            </div>
+            <div class="rounded-2xl bg-slate-950 p-4 text-sm leading-6 text-slate-400">
+              <span class="font-black text-farm-green">2. First purchase</span>
+              <p class="mt-1">They buy an eligible product sold by Trovara Farm. Your 1,000-credit reward remains pending.</p>
+            </div>
+            <div class="rounded-2xl bg-slate-950 p-4 text-sm leading-6 text-slate-400">
+              <span class="font-black text-farm-green">3. Reward activates</span>
+              <p class="mt-1">After the {{ credits.referralRefundWindowDays }}-day refund period passes without a refund, the credits move into your available balance.</p>
+            </div>
+          </div>
+          <p class="mt-4 text-xs leading-5 text-slate-500">
+            Trovara Farm Credits can only be used to buy eligible products sold by Trovara Farm. They cannot be withdrawn, transferred, or exchanged for cash.
+          </p>
+        </article>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div :class="cardClass">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Referred surveys</p>
+            <p class="mt-2 text-3xl font-black text-os-fg">{{ credits.referralCount }}</p>
+          </div>
+          <div :class="cardClass">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Rewards pending</p>
+            <p class="mt-2 text-3xl font-black text-farm-gold">{{ credits.referralPendingCount }}</p>
+          </div>
+          <div :class="cardClass">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Rewards activated</p>
+            <p class="mt-2 text-3xl font-black text-farm-green">{{ credits.referralActivatedCount }}</p>
+          </div>
+          <div :class="cardClass">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Welcome award</p>
+            <p class="mt-2 text-3xl font-black text-os-fg">{{ credits.welcomeCredits.toLocaleString('en-NG') }}</p>
+          </div>
+        </div>
+
+        <div :class="cardClass" class="mt-4">
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Your referral code</p>
+          <p class="mt-2 break-all text-xl font-black text-farm-gold">{{ credits.referralCode }}</p>
+        </div>
+
+        <article :class="cardClass" class="mt-5">
+          <h3 class="text-xl font-black text-os-fg">Trovara Farm Credits activity</h3>
+          <div v-if="credits.transactions.length" class="mt-4 divide-y divide-slate-800">
+            <div v-for="entry in credits.transactions" :key="entry.id" class="flex items-center justify-between gap-4 py-4">
+              <div>
+                <p class="font-bold text-os-fg">{{ entry.description }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ new Date(entry.createdAt).toLocaleDateString('en-NG') }}</p>
+              </div>
+              <p class="shrink-0 text-lg font-black" :class="entry.amount > 0 ? 'text-farm-green' : 'text-red-300'">
+                {{ entry.amount > 0 ? '+' : '' }}{{ entry.amount.toLocaleString('en-NG') }}
+              </p>
+            </div>
+          </div>
+          <p v-else class="mt-4 text-sm text-slate-500">No Trovara Farm Credits activity yet.</p>
+        </article>
+      </template>
+    </section>
 
     <section v-else-if="activeTab === 'orders'" class="mx-auto max-w-4xl">
       <h2 class="text-2xl font-black text-os-fg">Your orders</h2>

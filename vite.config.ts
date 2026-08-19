@@ -2,7 +2,13 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
-const SPA_SHOP_GETS = new Set(['/shop', '/shop/', '/shop/verify-email', '/shop/reset-password'])
+const SPA_SHOP_GETS = new Set([
+  '/shop',
+  '/shop/',
+  '/shop/verify-email',
+  '/shop/reset-password',
+  '/shop/credits/claim',
+])
 
 function contentSecurityPolicy(): Plugin {
   const policy = [

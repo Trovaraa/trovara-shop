@@ -40,7 +40,7 @@ server {
   listen 443 ssl http2;
   listen [::]:443 ssl http2;
   server_name shop.trovara.farm;
-  root /home/trovara-os/htdocs/shop.trovara.farm;
+  root /home/trovara-shop/htdocs/shop.trovara.farm;
   index index.html;
   access_log /var/log/nginx/trovara-shop-access.json trovara_shop_json;
   add_header X-Request-ID $request_id always;
@@ -62,7 +62,7 @@ server {
 
   proxy_set_header Host $host;
   proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-For $remote_addr;
   proxy_set_header X-Forwarded-Proto $scheme;
   proxy_set_header X-Request-ID $request_id;
 
@@ -72,11 +72,13 @@ server {
     proxy_set_header Connection "";
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Request-ID $request_id;
     add_header Cache-Control "no-store, no-cache, must-revalidate" always;
     add_header Pragma "no-cache" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
     add_header X-Request-ID $request_id always;
     proxy_read_timeout 120s;
     proxy_send_timeout 120s;
@@ -109,14 +111,22 @@ server {
     proxy_set_header Connection "";
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Request-ID $request_id;
     add_header Cache-Control "no-store, no-cache, must-revalidate" always;
     add_header Pragma "no-cache" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
     add_header X-Request-ID $request_id always;
     proxy_read_timeout 120s;
     proxy_send_timeout 120s;
+  }
+
+  location ~ /\. {
+    deny all;
+    access_log off;
+    log_not_found off;
   }
 
   location / {

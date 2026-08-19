@@ -19,6 +19,12 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('../views/ResetPasswordView.vue'),
     meta: { title: 'Reset password - Trovara Farm Account' },
   },
+  {
+    path: '/credits/claim',
+    name: 'claim-credits',
+    component: () => import('../views/CreditClaimView.vue'),
+    meta: { title: 'Claim Trovara Farm Credits - Trovara Farm' },
+  },
   { path: '/shop', redirect: (to) => ({ path: '/', query: to.query, hash: to.hash }) },
   {
     path: '/shop/verify-email',
@@ -27,6 +33,10 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/shop/reset-password',
     redirect: (to) => ({ path: '/reset-password', query: to.query, hash: to.hash }),
+  },
+  {
+    path: '/shop/credits/claim',
+    redirect: (to) => ({ path: '/credits/claim', query: to.query, hash: to.hash }),
   },
 ]
 

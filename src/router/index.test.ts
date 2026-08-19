@@ -14,6 +14,7 @@ describe('Accounts SPA routes', () => {
     expect((await routerAt('/')).currentRoute.value.name).toBe('home')
     expect((await routerAt('/verify-email')).currentRoute.value.name).toBe('verify-email')
     expect((await routerAt('/reset-password')).currentRoute.value.name).toBe('reset-password')
+    expect((await routerAt('/credits/claim')).currentRoute.value.name).toBe('claim-credits')
   })
 
   it('aliases /shop paths onto the clean routes and keeps query tokens', async () => {
@@ -30,5 +31,10 @@ describe('Accounts SPA routes', () => {
     expect(reset.currentRoute.value.path).toBe('/reset-password')
     expect(reset.currentRoute.value.name).toBe('reset-password')
     expect(reset.currentRoute.value.query.token).toBe('xyz')
+
+    const credits = await routerAt('/shop/credits/claim?token=credit-token')
+    expect(credits.currentRoute.value.path).toBe('/credits/claim')
+    expect(credits.currentRoute.value.name).toBe('claim-credits')
+    expect(credits.currentRoute.value.query.token).toBe('credit-token')
   })
 })
