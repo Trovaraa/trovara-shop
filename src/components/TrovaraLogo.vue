@@ -5,7 +5,7 @@ withDefaults(
     compact?: boolean
   }>(),
   {
-    descriptor: 'Accounts',
+    descriptor: 'Farm Account',
     compact: false,
   },
 )
@@ -15,7 +15,7 @@ withDefaults(
   <span
     class="inline-flex items-center"
     :class="compact ? 'gap-0' : 'gap-2.5'"
-    aria-label="Trovara Accounts"
+    aria-label="Trovara Farm Account"
   >
     <img
       src="/brand/trovara-monogram-tile-v1.svg"
@@ -26,7 +26,7 @@ withDefaults(
     />
     <span v-if="!compact" class="flex flex-col leading-none">
       <span class="text-base font-black tracking-[0.06em] text-os-fg">TROVARA</span>
-      <span class="mt-1 text-[8px] font-black uppercase tracking-[0.3em] text-farm-gold">{{
+      <span class="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-farm-gold">{{
         descriptor
       }}</span>
     </span>

@@ -358,7 +358,7 @@ const tabClass = (on: boolean) =>
   <div>
     <section class="mb-8 grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,420px)]">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.24em] text-farm-gold">Trovara Accounts</p>
+        <p class="text-xs font-black uppercase tracking-[0.24em] text-farm-gold">Trovara Farm Account</p>
         <h1 class="mt-3 text-3xl font-black text-os-fg sm:text-4xl">One account for every Trovara order.</h1>
         <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
           Create an account before harvest opens. It keeps website orders, chat updates, and traceability links together when products become available.

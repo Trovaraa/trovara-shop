@@ -9,7 +9,7 @@ defineProps<{ class?: string }>()
     role="img"
     aria-labelledby="shop-hero-title shop-hero-desc"
   >
-    <title id="shop-hero-title">Trovara Accounts</title>
+    <title id="shop-hero-title">Trovara Farm Account</title>
     <desc id="shop-hero-desc">Shopping bags and a harvest crate for customer orders.</desc>
     <defs>
       <radialGradient id="shopGlow" cx="70%" cy="40%" r="55%">

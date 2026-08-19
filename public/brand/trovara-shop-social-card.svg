@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">Trovara Accounts</title>
-  <desc id="desc">Trovara Accounts social share card: one account for every order.</desc>
+  <title id="title">Trovara Farm Account</title>
+  <desc id="desc">Trovara Farm Account social share card: one account for every order.</desc>
   <rect width="1200" height="630" fill="#28382F"/>
   <path d="M0 486c204-91 407-93 610-6s399 91 590 14v136H0Z" fill="#31483C"/>
   <path d="M0 530c211-70 412-64 603 17s390 81 597 5" fill="none" stroke="#889058" stroke-width="6" opacity=".65"/>
@@ -38,8 +38,8 @@
     <path d="M179 100c-31 23-56 57-69 94" fill="none" stroke="#FAF9F5" stroke-width="5" stroke-linecap="round"/>
   </g>
   <text x="220" y="126" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="850" letter-spacing="5">TROVARA</text>
-  <rect x="492" y="86" width="168" height="46" rx="10" fill="#B8C27A"/>
-  <text x="576" y="119" text-anchor="middle" fill="#28382F" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="850" letter-spacing="1.5">ACCOUNTS</text>
+  <rect x="492" y="86" width="220" height="46" rx="10" fill="#B8C27A"/>
+  <text x="602" y="119" text-anchor="middle" fill="#28382F" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="850" letter-spacing="1.2">FARM ACCOUNT</text>
   <text x="76" y="270" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="850">One account</text>
   <text x="76" y="346" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="850">for every</text>
   <text x="76" y="422" fill="#B8C27A" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="850">order.</text>
