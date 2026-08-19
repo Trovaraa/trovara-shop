@@ -7,7 +7,8 @@
 # This host serves the customer Accounts SPA only. Do not proxy /api or /auth
 # here (no staff Trovara OS login). DNS A/AAAA should match os.trovara.farm.
 #
-# GET aliases /shop, /shop/verify-email, and /shop/reset-password render the SPA.
+# GET aliases /shop, /shop/verify-email, /shop/reset-password, and
+# /shop/credits/claim render the SPA.
 # Other /shop/* methods and JSON GETs (/shop/session, /shop/catalog, …) proxy to
 # trovara-api on 127.0.0.1:3000.
 
@@ -90,6 +91,12 @@ server {
   }
 
   location = /shop/reset-password {
+    error_page 418 = @shop_api;
+    if ($request_method !~ ^(GET|HEAD)$) { return 418; }
+    try_files /index.html =404;
+  }
+
+  location = /shop/credits/claim {
     error_page 418 = @shop_api;
     if ($request_method !~ ^(GET|HEAD)$) { return 418; }
     try_files /index.html =404;

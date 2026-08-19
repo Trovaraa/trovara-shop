@@ -17,7 +17,7 @@ npm run dev          # http://127.0.0.1:5174
 ```
 
 Vite proxies `/shop` JSON to the OS API. GET aliases (`/shop`, `/shop/verify-email`,
-`/shop/reset-password`) still render this SPA.
+`/shop/reset-password`, and `/shop/credits/claim`) still render this SPA.
 
 ## Production
 

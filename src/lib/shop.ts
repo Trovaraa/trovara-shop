@@ -34,6 +34,31 @@ export type ShopOrder = {
   items: { productName: string; quantity: number; unit: string }[]
 }
 
+export type ShopCredits = {
+  balance: number
+  referralCode: string
+  referralUrl: string
+  referralCount: number
+  referralPendingCount: number
+  referralActivatedCount: number
+  welcomeCredits: number
+  referralCredits: number
+  referralRefundWindowDays: number
+  transactions: {
+    id: string
+    amount: number
+    eventType: string
+    description: string
+    createdAt: string
+  }[]
+}
+
+export type CreditInvitation = {
+  name: string
+  email: string
+  expiresAt: string
+}
+
 let csrfToken = ''
 
 export class ShopApiError extends Error {
@@ -130,6 +155,16 @@ export const shopApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  creditInvitation: (token: string) =>
+    request<{ invitation: CreditInvitation }>(
+      `/credits/invitation?token=${encodeURIComponent(token)}`,
+    ),
+  claimCredits: (body: { token: string; password: string }) =>
+    request<{ account: ShopAccount; csrfToken: string; credits: ShopCredits }>(
+      '/credits/claim',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  credits: () => request<{ credits: ShopCredits }>('/credits'),
 }
 
 export function formatShopPrice(priceKobo: number, currency = 'NGN'): string {
