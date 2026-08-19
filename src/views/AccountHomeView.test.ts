@@ -31,8 +31,8 @@ vi.mock('@/lib/shop', () => {
           balance: 0,
           referralCode: 'TRVTEST',
           referralUrl: 'https://trovara.farm/survey?ref=TRVTEST',
-          referralCount: 0,
-          referralPendingCount: 0,
+          referralCount: 1,
+          referralPendingCount: 1,
           referralActivatedCount: 0,
           welcomeCredits: 2_000,
           welcomeCreditAwarded: false,
@@ -63,5 +63,7 @@ describe('AccountHomeView credit status', () => {
     )
     expect(wrapper.text()).toContain('Not awarded')
     expect(wrapper.find('.credit-balance-on-dark').exists()).toBe(true)
+    expect(wrapper.text()).toContain('1,000 Trovara Credits pending')
+    expect(wrapper.text()).toContain('Trovara Credits · 1 referral')
   })
 })

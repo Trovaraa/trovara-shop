@@ -566,6 +566,14 @@ const tabClass = (on: boolean) =>
             <p class="mt-3 text-sm leading-6 text-slate-400">
               Share your link. Your reward stays pending until your referred friend makes their first eligible Trovara Farm purchase and its {{ credits.referralRefundWindowDays }}-day refund period ends without a refund.
             </p>
+            <div v-if="credits.referralPendingCount > 0" class="mt-4 rounded-2xl border border-farm-gold/35 bg-farm-gold/10 p-4">
+              <p class="text-sm font-black text-os-fg">
+                {{ (credits.referralPendingCount * credits.referralCredits).toLocaleString('en-NG') }} Trovara Credits pending
+              </p>
+              <p class="mt-1 text-xs leading-5 text-slate-400">
+                From {{ credits.referralPendingCount }} {{ credits.referralPendingCount === 1 ? 'referred friend' : 'referred friends' }}. This is a promotional-credit amount, not cash.
+              </p>
+            </div>
             <div class="mt-5 rounded-2xl bg-slate-950 p-4">
               <p class="break-all text-sm font-semibold text-farm-green">{{ credits.referralUrl }}</p>
             </div>
@@ -604,11 +612,13 @@ const tabClass = (on: boolean) =>
           </div>
           <div :class="cardClass">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Rewards pending</p>
-            <p class="mt-2 text-3xl font-black text-farm-gold">{{ credits.referralPendingCount }}</p>
+            <p class="mt-2 text-3xl font-black text-farm-gold">{{ (credits.referralPendingCount * credits.referralCredits).toLocaleString('en-NG') }}</p>
+            <p class="mt-1 text-xs text-slate-500">Trovara Credits · {{ credits.referralPendingCount }} {{ credits.referralPendingCount === 1 ? 'referral' : 'referrals' }}</p>
           </div>
           <div :class="cardClass">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Rewards activated</p>
-            <p class="mt-2 text-3xl font-black text-farm-green">{{ credits.referralActivatedCount }}</p>
+            <p class="mt-2 text-3xl font-black text-farm-green">{{ (credits.referralActivatedCount * credits.referralCredits).toLocaleString('en-NG') }}</p>
+            <p class="mt-1 text-xs text-slate-500">Trovara Credits · {{ credits.referralActivatedCount }} {{ credits.referralActivatedCount === 1 ? 'referral' : 'referrals' }}</p>
           </div>
           <div :class="cardClass">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Welcome award</p>
