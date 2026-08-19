@@ -18,6 +18,37 @@ export type ShopProduct = {
   unit: string
   priceKobo: number
   currency: string
+  description: string | null
+  category: string
+  provenance: 'trovara_grown' | 'trovara_sourced'
+  familyBasketQuantity: number
+}
+
+export type ShopDeliverySlot = {
+  id: string
+  label: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  cutoffHours: number
+  active?: boolean
+  sortOrder?: number
+}
+
+export type ShopRecurringOrder = {
+  id: string
+  frequency: 'weekly' | 'fortnightly' | 'monthly'
+  items: { productId: string; quantity: number }[]
+  deliverySlotId: string | null
+  deliveryLabel: string | null
+  deliveryDayOfWeek: number | null
+  deliveryStartTime: string | null
+  deliveryEndTime: string | null
+  address: string
+  phone: string | null
+  nextCheckoutAt: string
+  active: boolean
+  createdAt?: string
 }
 
 export type ShopOrder = {
@@ -31,7 +62,18 @@ export type ShopOrder = {
   createdAt: string
   lotCode: string | null
   traceabilityUrl: string | null
-  items: { productName: string; quantity: number; unit: string }[]
+  deliveryDate: string | null
+  deliverySlotId: string | null
+  deliveryLabel: string | null
+  deliveryStartTime: string | null
+  deliveryEndTime: string | null
+  items: {
+    productId: string | null
+    productName: string
+    quantity: number
+    unit: string
+    provenance: 'trovara_grown' | 'trovara_sourced' | null
+  }[]
 }
 
 export type ShopCredits = {
@@ -119,7 +161,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const shopApi = {
   session: () => request<{ csrfToken: string; account: ShopAccount | null }>('/session'),
-  catalog: () => request<{ products: ShopProduct[]; farm: { name: string } }>('/catalog'),
+  catalog: () =>
+    request<{
+      products: ShopProduct[]
+      deliverySlots: ShopDeliverySlot[]
+      farm: { name: string }
+    }>('/catalog'),
   register: (body: { name: string; email: string; phone?: string; password: string }) =>
     request<{ message: string }>('/register', {
       method: 'POST',
@@ -133,12 +180,19 @@ export const shopApi = {
   logout: () => request<{ ok: boolean }>('/logout', { method: 'POST' }),
   me: () => request<{ account: ShopAccount; channels: { channel: string; name: string | null }[] }>('/me'),
   orders: () => request<{ orders: ShopOrder[] }>('/orders'),
+  recurringOrders: () => request<{ recurringOrders: ShopRecurringOrder[] }>('/recurring-orders'),
+  cancelRecurringOrder: (id: string) =>
+    request<{ ok: boolean }>(`/recurring-orders/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   linkCode: () =>
     request<{ code: string; expiresAt: string; instruction: string }>('/link-code', { method: 'POST' }),
   placeOrder: (body: {
     items: { productId: string; quantity: number }[]
     address: string
     phone?: string
+    deliverySlotId?: string
+    deliveryDate?: string
+    recurrenceFrequency?: 'weekly' | 'fortnightly' | 'monthly'
+    recurringOrderId?: string
   }) =>
     request<{ reference: string; payment?: { authorizationUrl: string; amountKobo: number } }>(
       '/orders',
