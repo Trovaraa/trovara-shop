@@ -30,7 +30,7 @@ async function claim() {
     if (err instanceof ShopApiError && err.needsSignIn) {
       needsSignIn.value = true
     }
-    error.value = err instanceof Error ? err.message : 'Unable to claim these Trovara Farm Credits.'
+    error.value = err instanceof Error ? err.message : 'Unable to claim these Trovara Credits.'
   } finally {
     busy.value = false
   }
@@ -57,9 +57,9 @@ onMounted(async () => {
 <template>
   <div class="mx-auto max-w-xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/85 shadow-2xl">
     <div class="bg-[#18311f] px-6 py-8 text-center sm:px-10">
-      <img src="/brand/trovara-credits-symbol.svg" alt="Trovara Farm Credits" class="mx-auto h-24 w-24" />
-      <p class="mt-5 text-xs font-black uppercase tracking-[0.24em] text-[#c5ce82]">Trovara Farm Credits</p>
-      <h1 class="mt-3 text-3xl font-black text-white">Your 2,000 Trovara Farm Credits are ready.</h1>
+      <img src="/brand/trovara-credits-symbol.svg" alt="Trovara Credits" class="mx-auto h-24 w-24" />
+      <p class="mt-5 text-xs font-black uppercase tracking-[0.24em] text-[#c5ce82]">Trovara Credits</p>
+      <h1 class="mt-3 text-3xl font-black text-white">Your 2,000 Trovara Credits are ready.</h1>
     </div>
 
     <div class="p-6 sm:p-10">
@@ -70,7 +70,7 @@ onMounted(async () => {
       <div v-else-if="credits" class="text-center">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">Account activated</p>
         <p class="mt-4 text-5xl font-black text-os-fg">{{ credits.balance.toLocaleString('en-NG') }}</p>
-        <p class="mt-2 font-bold text-slate-400">Trovara Farm Credits</p>
+        <p class="mt-2 font-bold text-slate-400">Trovara Credits</p>
         <p class="mt-6 text-sm leading-6 text-slate-400">
           Your balance and personal referral link are now in your Trovara Farm account.
         </p>
@@ -79,11 +79,11 @@ onMounted(async () => {
           <ol class="mt-3 space-y-3 text-sm leading-6 text-slate-400">
             <li><strong class="text-farm-green">1.</strong> Share your personal survey link.</li>
             <li><strong class="text-farm-green">2.</strong> Your friend completes the survey, activates their account, and makes their first eligible Trovara Farm purchase.</li>
-            <li><strong class="text-farm-green">3.</strong> Your 1,000 Trovara Farm Credits become available after that purchase passes its {{ credits.referralRefundWindowDays }}-day refund period without a refund.</li>
+            <li><strong class="text-farm-green">3.</strong> Your {{ credits.referralCredits.toLocaleString('en-NG') }} Trovara Credits become available after that purchase passes its {{ credits.referralRefundWindowDays }}-day refund period without a refund.</li>
           </ol>
         </div>
         <p class="mt-5 text-xs leading-5 text-slate-500">
-          Trovara Farm Credits can only be used to buy eligible products sold by Trovara Farm. They are promotional credits, not cash, and cannot be withdrawn or transferred.
+          Trovara Credits can only be used to buy eligible products sold by Trovara Farm. They are promotional credits, not cash, and cannot be withdrawn or transferred.
         </p>
         <RouterLink to="/" class="mt-7 inline-flex min-h-12 items-center rounded-xl bg-farm-green px-6 font-bold text-white">
           Open my account
@@ -112,11 +112,11 @@ onMounted(async () => {
             <input v-model="form.confirmPassword" required type="password" minlength="8" maxlength="128" autocomplete="new-password" class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-none focus:border-farm-green" />
           </label>
           <button type="submit" class="min-h-12 rounded-xl bg-farm-green px-5 font-bold text-white disabled:opacity-60" :disabled="busy">
-            {{ busy ? 'Activating…' : 'Activate account and claim 2,000 Trovara Farm Credits' }}
+            {{ busy ? 'Activating…' : 'Activate account and claim 2,000 Trovara Credits' }}
           </button>
         </form>
         <p class="mt-6 text-xs leading-5 text-slate-500">
-          Trovara Farm Credits can only be used to buy eligible products sold by Trovara Farm. They are promotional credits, not cash. Referral credits become available only after the referred friend's first eligible purchase passes its refund period. This invitation expires
+          Trovara Credits can only be used to buy eligible products sold by Trovara Farm. They are promotional credits, not cash. Referral credits become available only after the referred friend's first eligible purchase passes its refund period. This invitation expires
           {{ new Date(invitation.expiresAt).toLocaleDateString('en-NG') }}.
         </p>
       </template>

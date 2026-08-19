@@ -435,8 +435,8 @@ const tabClass = (on: boolean) =>
         {{
           tab === 'credits'
             ? credits
-              ? `Trovara Farm Credits · ${credits.balance.toLocaleString('en-NG')}`
-              : 'Trovara Farm Credits'
+              ? `Trovara Credits · ${credits.balance.toLocaleString('en-NG')}`
+              : 'Trovara Credits'
             : tab === 'orders'
             ? `My orders${orders.length ? ` (${orders.length})` : ''}`
             : tab === 'connect'
@@ -525,14 +525,14 @@ const tabClass = (on: boolean) =>
     <section v-else-if="activeTab === 'credits'" class="mx-auto max-w-4xl">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">Trovara Farm Credits</p>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">Trovara Credits</p>
           <h2 class="mt-2 text-2xl font-black text-os-fg">Your rewards</h2>
         </div>
         <p class="text-xs text-slate-500">For eligible Trovara Farm products only · Promotional credits, not cash</p>
       </div>
 
       <div v-if="!account" :class="cardClass" class="mt-6 text-center">
-        <p class="text-lg font-black text-os-fg">Sign in to view your Trovara Farm Credits</p>
+        <p class="text-lg font-black text-os-fg">Sign in to view your Trovara Credits</p>
         <p class="mt-2 text-sm leading-6 text-slate-400">Your balance and personal referral link belong to your shop account.</p>
         <button type="button" class="mt-5 rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white" @click="setAuthMode('login'); scrollToAccount()">Sign in</button>
       </div>
@@ -544,7 +544,7 @@ const tabClass = (on: boolean) =>
               <div>
                 <p class="text-xs font-black uppercase tracking-[0.22em] text-[#c5ce82]">Available balance</p>
                 <p class="mt-4 text-5xl font-black text-white">{{ credits.balance.toLocaleString('en-NG') }}</p>
-                <p class="mt-2 text-sm font-bold text-slate-300">Trovara Farm Credits</p>
+                <p class="mt-2 text-sm font-bold text-slate-300">Trovara Credits</p>
               </div>
               <img src="/brand/trovara-credits-symbol.svg" alt="" class="h-20 w-20 shrink-0" />
             </div>
@@ -552,7 +552,7 @@ const tabClass = (on: boolean) =>
 
           <article :class="cardClass">
             <p class="text-xs font-black uppercase tracking-[0.18em] text-farm-green">Invite someone</p>
-            <h3 class="mt-2 text-xl font-black text-os-fg">Earn {{ credits.referralCredits.toLocaleString('en-NG') }} more Trovara Farm Credits</h3>
+            <h3 class="mt-2 text-xl font-black text-os-fg">Earn {{ credits.referralCredits.toLocaleString('en-NG') }} more Trovara Credits</h3>
             <p class="mt-3 text-sm leading-6 text-slate-400">
               Share your link. Your reward stays pending until your referred friend makes their first eligible Trovara Farm purchase and its {{ credits.referralRefundWindowDays }}-day refund period ends without a refund.
             </p>
@@ -575,7 +575,7 @@ const tabClass = (on: boolean) =>
             </div>
             <div class="rounded-2xl bg-slate-950 p-4 text-sm leading-6 text-slate-400">
               <span class="font-black text-farm-green">2. First purchase</span>
-              <p class="mt-1">They buy an eligible product sold by Trovara Farm. Your 1,000-credit reward remains pending.</p>
+              <p class="mt-1">They buy an eligible product sold by Trovara Farm. Your {{ credits.referralCredits.toLocaleString('en-NG') }}-credit reward remains pending.</p>
             </div>
             <div class="rounded-2xl bg-slate-950 p-4 text-sm leading-6 text-slate-400">
               <span class="font-black text-farm-green">3. Reward activates</span>
@@ -583,7 +583,7 @@ const tabClass = (on: boolean) =>
             </div>
           </div>
           <p class="mt-4 text-xs leading-5 text-slate-500">
-            Trovara Farm Credits can only be used to buy eligible products sold by Trovara Farm. They cannot be withdrawn, transferred, or exchanged for cash.
+            Trovara Credits can only be used to buy eligible products sold by Trovara Farm. They cannot be withdrawn, transferred, or exchanged for cash.
           </p>
         </article>
 
@@ -612,7 +612,7 @@ const tabClass = (on: boolean) =>
         </div>
 
         <article :class="cardClass" class="mt-5">
-          <h3 class="text-xl font-black text-os-fg">Trovara Farm Credits activity</h3>
+          <h3 class="text-xl font-black text-os-fg">Trovara Credits activity</h3>
           <div v-if="credits.transactions.length" class="mt-4 divide-y divide-slate-800">
             <div v-for="entry in credits.transactions" :key="entry.id" class="flex items-center justify-between gap-4 py-4">
               <div>
@@ -624,7 +624,7 @@ const tabClass = (on: boolean) =>
               </p>
             </div>
           </div>
-          <p v-else class="mt-4 text-sm text-slate-500">No Trovara Farm Credits activity yet.</p>
+          <p v-else class="mt-4 text-sm text-slate-500">No Trovara Credits activity yet.</p>
         </article>
       </template>
     </section>
