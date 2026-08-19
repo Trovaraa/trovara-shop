@@ -23,7 +23,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/credits/claim',
     name: 'claim-credits',
     component: () => import('../views/CreditClaimView.vue'),
-    meta: { title: 'Claim Trovara Farm Credits - Trovara Farm' },
+    meta: { title: 'Claim Trovara Credits - Trovara Farm' },
   },
   { path: '/shop', redirect: (to) => ({ path: '/', query: to.query, hash: to.hash }) },
   {
