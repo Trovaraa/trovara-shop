@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 import TrovaraLogo from '@/components/TrovaraLogo.vue'
 import { FARM_ORIGIN } from '@/lib/farm'
 </script>
@@ -11,16 +12,19 @@ import { FARM_ORIGIN } from '@/lib/farm'
         <RouterLink to="/" class="min-h-11">
           <TrovaraLogo />
         </RouterLink>
-        <a
-          :href="FARM_ORIGIN"
-          class="text-sm font-semibold text-slate-400 hover:text-white"
-        >
-          trovara.farm
-        </a>
+        <ThemeSwitcher compact />
       </div>
     </header>
     <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <RouterView />
     </main>
+    <footer class="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+      <a
+        :href="FARM_ORIGIN"
+        class="text-xs font-semibold text-os-fg-muted hover:text-os-fg"
+      >
+        Farm website
+      </a>
+    </footer>
   </div>
 </template>

@@ -10,6 +10,7 @@ import {
 } from '@/lib/shop'
 import { buildWhatsAppLink } from '@/lib/whatsapp'
 import { TELEGRAM_ORDER_URL } from '@/lib/telegram'
+import ShopHeroArt from '@/components/ShopHeroArt.vue'
 import { FARM_PRODUCTS_URL, productImage } from '@/lib/farm'
 
 type Tab = 'shop' | 'orders' | 'connect'
@@ -355,16 +356,19 @@ const tabClass = (on: boolean) =>
 
 <template>
   <div>
-    <section class="mb-8">
-      <p class="text-xs font-black uppercase tracking-[0.24em] text-farm-gold">Trovara Accounts</p>
-      <h1 class="mt-3 text-3xl font-black text-os-fg sm:text-4xl">One account for every Trovara order.</h1>
-      <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
-        Create an account before harvest opens. It keeps website orders, chat updates, and traceability links together when products become available.
-      </p>
-      <div class="mt-6 flex flex-wrap gap-3">
-        <a href="#shop-account" class="rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white hover:bg-farm-green-dark" @click.prevent="goCreateAccount">Create account</a>
-        <a :href="FARM_PRODUCTS_URL" class="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800">Join product waitlists</a>
+    <section class="mb-8 grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,420px)]">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.24em] text-farm-gold">Trovara Accounts</p>
+        <h1 class="mt-3 text-3xl font-black text-os-fg sm:text-4xl">One account for every Trovara order.</h1>
+        <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+          Create an account before harvest opens. It keeps website orders, chat updates, and traceability links together when products become available.
+        </p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href="#shop-account" class="rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white hover:bg-farm-green-dark" @click.prevent="goCreateAccount">Create account</a>
+          <a :href="FARM_PRODUCTS_URL" class="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800">Join product waitlists</a>
+        </div>
       </div>
+      <ShopHeroArt class="mx-auto w-full max-w-md" />
     </section>
 
     <div

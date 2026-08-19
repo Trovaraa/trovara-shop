@@ -25,7 +25,7 @@ withDefaults(
       height="44"
     />
     <span v-if="!compact" class="flex flex-col leading-none">
-      <span class="text-base font-black tracking-[0.06em] text-white">TROVARA</span>
+      <span class="text-base font-black tracking-[0.06em] text-os-fg">TROVARA</span>
       <span class="mt-1 text-[8px] font-black uppercase tracking-[0.3em] text-farm-gold">{{
         descriptor
       }}</span>
