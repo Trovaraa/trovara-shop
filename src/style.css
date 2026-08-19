@@ -140,6 +140,18 @@ html.light body
   color: #fff !important;
 }
 
+/* Branded balance cards stay dark in both themes, so their copy must not be
+   recoloured by the broad light-theme text utilities above. */
+.credit-balance-card .credit-balance-on-dark,
+html.light body .credit-balance-card .credit-balance-on-dark {
+  color: #fff !important;
+}
+
+.credit-balance-card .credit-balance-muted,
+html.light body .credit-balance-card .credit-balance-muted {
+  color: #cbd5e1 !important;
+}
+
 html.light .from-slate-950 {
   --tw-gradient-from: #eef3f0 var(--tw-gradient-from-position) !important;
   --tw-gradient-to: rgb(238 243 240 / 0) var(--tw-gradient-to-position) !important;

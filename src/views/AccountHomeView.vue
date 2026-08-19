@@ -539,14 +539,24 @@ const tabClass = (on: boolean) =>
 
       <template v-else-if="credits">
         <div class="mt-6 grid gap-5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          <article class="overflow-hidden rounded-3xl border border-[#889058]/40 bg-[#18311f] p-6 shadow-xl sm:p-8">
+          <article class="credit-balance-card overflow-hidden rounded-3xl border border-[#889058]/40 bg-[#18311f] p-6 shadow-xl sm:p-8">
             <div class="flex items-start justify-between gap-5">
               <div>
                 <p class="text-xs font-black uppercase tracking-[0.22em] text-[#c5ce82]">Available balance</p>
-                <p class="mt-4 text-5xl font-black text-white">{{ credits.balance.toLocaleString('en-NG') }}</p>
-                <p class="mt-2 text-sm font-bold text-slate-300">Trovara Credits</p>
+                <p class="credit-balance-on-dark mt-4 text-5xl font-black">{{ credits.balance.toLocaleString('en-NG') }}</p>
+                <p class="credit-balance-on-dark mt-2 text-sm font-bold">Trovara Credits available now</p>
               </div>
               <img src="/brand/trovara-credits-symbol.svg" alt="" class="h-20 w-20 shrink-0" />
+            </div>
+            <div class="mt-6 rounded-2xl border border-white/15 bg-black/15 p-4">
+              <p class="credit-balance-on-dark text-sm font-black">
+                {{ credits.welcomeCreditAwarded ? `${credits.welcomeCredits.toLocaleString('en-NG')} welcome credits awarded` : 'Welcome credits not awarded' }}
+              </p>
+              <p class="credit-balance-muted mt-1 text-xs leading-5">
+                {{ credits.welcomeCreditAwarded
+                  ? `The ${credits.welcomeCredits.toLocaleString('en-NG')} welcome-credit award was added to this account.`
+                  : `This account has not received the ${credits.welcomeCredits.toLocaleString('en-NG')} welcome-credit award.` }}
+              </p>
             </div>
           </article>
 
@@ -602,7 +612,10 @@ const tabClass = (on: boolean) =>
           </div>
           <div :class="cardClass">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Welcome award</p>
-            <p class="mt-2 text-3xl font-black text-os-fg">{{ credits.welcomeCredits.toLocaleString('en-NG') }}</p>
+            <p class="mt-2 text-2xl font-black" :class="credits.welcomeCreditAwarded ? 'text-farm-green' : 'text-slate-500'">
+              {{ credits.welcomeCreditAwarded ? 'Awarded' : 'Not awarded' }}
+            </p>
+            <p class="mt-1 text-xs text-slate-500">{{ credits.welcomeCredits.toLocaleString('en-NG') }} Trovara Credits</p>
           </div>
         </div>
 

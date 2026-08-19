@@ -42,6 +42,7 @@ export type ShopCredits = {
   referralPendingCount: number
   referralActivatedCount: number
   welcomeCredits: number
+  welcomeCreditAwarded: boolean
   referralCredits: number
   referralRefundWindowDays: number
   transactions: {
