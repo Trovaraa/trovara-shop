@@ -5,19 +5,19 @@ export const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'home',
     component: () => import('../views/AccountHomeView.vue'),
-    meta: { title: 'Trovara Accounts' },
+    meta: { title: 'Trovara Farm Account' },
   },
   {
     path: '/verify-email',
     name: 'verify-email',
     component: () => import('../views/VerifyEmailView.vue'),
-    meta: { title: 'Verify email - Trovara Accounts' },
+    meta: { title: 'Verify email - Trovara Farm Account' },
   },
   {
     path: '/reset-password',
     name: 'reset-password',
     component: () => import('../views/ResetPasswordView.vue'),
-    meta: { title: 'Reset password - Trovara Accounts' },
+    meta: { title: 'Reset password - Trovara Farm Account' },
   },
   { path: '/shop', redirect: (to) => ({ path: '/', query: to.query, hash: to.hash }) },
   {
@@ -41,7 +41,7 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
-  const title = typeof to.meta.title === 'string' ? to.meta.title : 'Trovara Accounts'
+  const title = typeof to.meta.title === 'string' ? to.meta.title : 'Trovara Farm Account'
   document.title = title
 })
 

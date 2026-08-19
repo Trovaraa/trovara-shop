@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Trovara Farm Account">
+  <rect width="64" height="64" rx="14" fill="#28382F"/>
+  <path d="M22 18c0-7 5-12 10-12s10 5 10 12" fill="none" stroke="#B8C27A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M14 22h36l-4 32H18Z" fill="#2d9960"/>
+  <rect x="26" y="32" width="12" height="12" rx="2" fill="#FAF9F5"/>
+</svg>

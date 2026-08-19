@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Trovara Farm Account</title>
+  <desc id="desc">Trovara Farm Account social share card: one account for every order.</desc>
+  <rect width="1200" height="630" fill="#28382F"/>
+  <path d="M0 486c204-91 407-93 610-6s399 91 590 14v136H0Z" fill="#31483C"/>
+  <path d="M0 530c211-70 412-64 603 17s390 81 597 5" fill="none" stroke="#889058" stroke-width="6" opacity=".65"/>
+
+  <!-- Shopping bags (Accounts mark  not OS gears) -->
+  <g transform="translate(760 118)" opacity=".95">
+    <path d="M86 56c0-36 28-62 64-62s64 26 64 62" fill="none" stroke="#B8C27A" stroke-width="16" stroke-linecap="round"/>
+    <path d="M28 74h248l-22 292H50Z" fill="#2d9960"/>
+    <path d="M50 74h204l-18 292H68Z" fill="#1f6b42"/>
+    <rect x="118" y="162" width="76" height="76" rx="16" fill="#FAF9F5"/>
+    <path fill="#28382F" d="M134 178h48v12h-2c0-7-4-10-12-10h-8v50c0 6 2 9 7 10v1h-22v-1c5-1 7-4 7-10v-50h-8c-8 0-12 3-12 10h-2z"/>
+  </g>
+  <g transform="translate(690 268)" opacity=".85">
+    <path d="M42 22c0-22 16-38 38-38s38 16 38 38" fill="none" stroke="#889058" stroke-width="12" stroke-linecap="round"/>
+    <path d="M8 36h140l-14 168H22Z" fill="#889058"/>
+  </g>
+  <g transform="translate(980 360)">
+    <rect x="0" y="28" width="168" height="78" rx="8" fill="#31483C"/>
+    <rect x="8" y="36" width="152" height="62" rx="4" fill="none" stroke="#B8C27A" stroke-width="3"/>
+    <rect x="16" y="0" width="52" height="40" rx="8" fill="#B8C27A"/>
+    <rect x="62" y="8" width="44" height="34" rx="8" fill="#e8a427"/>
+    <rect x="102" y="4" width="40" height="38" rx="8" fill="#2d9960"/>
+  </g>
+  <g transform="translate(1048 188) rotate(16)">
+    <path d="M8 0h70l22 22v56H8Z" fill="#e8a427"/>
+    <circle cx="26" cy="18" r="6" fill="#28382F"/>
+  </g>
+
+  <rect x="72" y="54" width="118" height="118" rx="24" fill="#FAF9F5"/>
+  <g transform="translate(90 63) scale(.38)">
+    <path fill="#28382F" d="M18 14h184v48h-5c-1-24-17-39-45-39h-30v184c0 22 8 32 27 37v3H71v-3c19-5 27-15 27-37V23H68C40 23 24 38 23 62h-5Z"/>
+    <path fill="#28382F" d="M19 61c5 42 24 70 59 83 25 10 37 33 42 73-4-49-16-83-43-111C59 87 40 72 19 61Z"/>
+    <path fill="#889058" d="M201 70c-5 46-25 76-60 91-20 9-31 29-39 61 6-42 18-72 44-99 18-19 36-36 55-53Z"/>
+    <path d="M42 91c32 20 58 55 68 103" fill="none" stroke="#FAF9F5" stroke-width="5" stroke-linecap="round"/>
+    <path d="M179 100c-31 23-56 57-69 94" fill="none" stroke="#FAF9F5" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <text x="220" y="126" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="850" letter-spacing="5">TROVARA</text>
+  <rect x="492" y="86" width="220" height="46" rx="10" fill="#B8C27A"/>
+  <text x="602" y="119" text-anchor="middle" fill="#28382F" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="850" letter-spacing="1.2">FARM ACCOUNT</text>
+  <text x="76" y="270" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="850">One account</text>
+  <text x="76" y="346" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="850">for every</text>
+  <text x="76" y="422" fill="#B8C27A" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="850">order.</text>
+  <text x="78" y="472" fill="#E5E7DF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">Customer checkout and harvest waitlists</text>
+</svg>

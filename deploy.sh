@@ -111,7 +111,7 @@ fs.writeFileSync(file, `${JSON.stringify({
 }, null, 2)}\n`, { mode: 0o644 })
 NODE
 
-echo "==> Syncing immutable release $RELEASE_SHA…"
+echo "==> Syncing immutable release ${RELEASE_SHA}..."
 rsync -az --delete \
   -e "$SSH" \
   --exclude '.git/' \
