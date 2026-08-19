@@ -30,3 +30,10 @@ Second CloudPanel site on the same VPS as OS:
 OS production `.env` still needs `PUBLIC_SHOP_URL=https://shop.trovara.farm` and
 `https://shop.trovara.farm` in `CORS_ORIGIN` so verify/reset/order emails and
 cookies work. That API config is not this frontend.
+
+## CI
+
+PRs and `main` run [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
+(lint, `npm audit`, tests, production build) and
+[`.github/workflows/security.yml`](./.github/workflows/security.yml) (CodeQL,
+gitleaks, OSV-Scanner, ESLint), matching Trovara OS and the marketing site.

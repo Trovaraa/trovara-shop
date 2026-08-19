@@ -1,0 +1,17 @@
+# Gitleaks config for Trovara Shop CI.
+# Extends defaults; allowlists known false positives (not real secrets).
+
+title = "trovara-shop"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "False positives: theme localStorage key, docs placeholders, test fixtures"
+paths = [
+  '''(^|/)docs/''',
+  '''\.test\.ts$''',
+]
+regexes = [
+  '''trovara_shop_theme''',
+]
