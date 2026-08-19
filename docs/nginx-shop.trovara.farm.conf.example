@@ -1,0 +1,125 @@
+# Example nginx for shop.trovara.farm (this repo: trovara-shop)
+#
+# Same VPS and API as os.trovara.farm. CloudPanel site web root:
+#   /home/trovara-os/htdocs/shop.trovara.farm
+# Deploy the built SPA with ./deploy.sh — not trovara-os/deploy.sh.
+#
+# This host serves the customer Accounts SPA only. Do not proxy /api or /auth
+# here (no staff Trovara OS login). DNS A/AAAA should match os.trovara.farm.
+#
+# GET aliases /shop, /shop/verify-email, and /shop/reset-password render the SPA.
+# Other /shop/* methods and JSON GETs (/shop/session, /shop/catalog, …) proxy to
+# trovara-api on 127.0.0.1:3000.
+
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  ''      close;
+}
+
+log_format trovara_shop_json escape=json
+  '{"time":"$time_iso8601","requestId":"$request_id","remote":"$remote_addr",'
+  '"method":"$request_method","uri":"$uri","status":$status,'
+  '"bytes":$body_bytes_sent,"duration":$request_time,'
+  '"upstreamDuration":"$upstream_response_time"}';
+
+upstream trovara_shop_api {
+  server 127.0.0.1:3000;
+  keepalive 16;
+}
+
+server {
+  listen 80;
+  listen [::]:80;
+  server_name shop.trovara.farm;
+  access_log /var/log/nginx/trovara-shop-access.json trovara_shop_json;
+  add_header X-Request-ID $request_id always;
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+  server_name shop.trovara.farm;
+  root /home/trovara-os/htdocs/shop.trovara.farm;
+  index index.html;
+  access_log /var/log/nginx/trovara-shop-access.json trovara_shop_json;
+  add_header X-Request-ID $request_id always;
+
+  ssl_certificate     /etc/letsencrypt/live/shop.trovara.farm/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/shop.trovara.farm/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  ssl_session_cache shared:SSL:10m;
+
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+  add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://trovara.farm https://www.trovara.farm; media-src 'self'; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'" always;
+
+  client_max_body_size 2m;
+
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Request-ID $request_id;
+
+  location @shop_api {
+    proxy_pass http://trovara_shop_api;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Request-ID $request_id;
+    add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header X-Request-ID $request_id always;
+    proxy_read_timeout 120s;
+    proxy_send_timeout 120s;
+  }
+
+  # Email-link aliases: GET/HEAD serve the SPA; POST still hits the API.
+  location = /shop/verify-email {
+    error_page 418 = @shop_api;
+    if ($request_method !~ ^(GET|HEAD)$) { return 418; }
+    try_files /index.html =404;
+  }
+
+  location = /shop/reset-password {
+    error_page 418 = @shop_api;
+    if ($request_method !~ ^(GET|HEAD)$) { return 418; }
+    try_files /index.html =404;
+  }
+
+  location = /shop {
+    try_files /index.html =404;
+  }
+
+  location = /shop/ {
+    try_files /index.html =404;
+  }
+
+  location ^~ /shop/ {
+    proxy_pass http://trovara_shop_api;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Request-ID $request_id;
+    add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header X-Request-ID $request_id always;
+    proxy_read_timeout 120s;
+    proxy_send_timeout 120s;
+  }
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}

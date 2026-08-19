@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+html.dark {
+  color-scheme: dark;
+  --os-canvas: #07140f;
+  --os-canvas-mid: #07110e;
+  --os-canvas-end: #0b1712;
+  --os-shell: #10221a;
+  --os-shell-muted: #213b30;
+  --os-border: rgba(255, 255, 255, 0.1);
+  --os-wash: rgba(45, 153, 96, 0.1);
+  --os-fg: #f8fafc;
+  --os-fg-muted: #94a3b8;
+}
+
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  background-color: var(--os-canvas);
+  color: #e2e8f0;
+}
+
+.text-os-fg {
+  color: var(--os-fg);
+}
+
+.text-os-fg-muted {
+  color: var(--os-fg-muted);
+}
+
+#app {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
