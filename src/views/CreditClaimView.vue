@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { shopApi, type CreditInvitation, type ShopCredits } from '@/lib/shop'
+import { shopApi, ShopApiError, type CreditInvitation, type ShopCredits } from '@/lib/shop'
 
 const route = useRoute()
 const loading = ref(true)
@@ -10,10 +10,12 @@ const error = ref('')
 const token = ref('')
 const invitation = ref<CreditInvitation | null>(null)
 const credits = ref<ShopCredits | null>(null)
+const needsSignIn = ref(false)
 const form = reactive({ password: '', confirmPassword: '' })
 
 async function claim() {
   error.value = ''
+  needsSignIn.value = false
   if (form.password !== form.confirmPassword) {
     error.value = 'Passwords do not match.'
     return
@@ -25,6 +27,9 @@ async function claim() {
     form.password = ''
     form.confirmPassword = ''
   } catch (err) {
+    if (err instanceof ShopApiError && err.needsSignIn) {
+      needsSignIn.value = true
+    }
     error.value = err instanceof Error ? err.message : 'Unable to claim these Trovara Farm Credits.'
   } finally {
     busy.value = false
@@ -93,6 +98,9 @@ onMounted(async () => {
         </p>
         <div v-if="error" class="mt-5 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm font-semibold text-red-300" role="alert">
           {{ error }}
+          <RouterLink v-if="needsSignIn" to="/" class="mt-3 block font-bold text-farm-green">
+            Sign in to your account
+          </RouterLink>
         </div>
         <form class="mt-6 grid gap-4" @submit.prevent="claim">
           <label class="text-sm font-bold text-os-fg">

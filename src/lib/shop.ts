@@ -64,12 +64,14 @@ let csrfToken = ''
 export class ShopApiError extends Error {
   status: number
   needsVerification: boolean
+  needsSignIn: boolean
 
-  constructor(message: string, status: number, needsVerification = false) {
+  constructor(message: string, status: number, needsVerification = false, needsSignIn = false) {
     super(message)
     this.name = 'ShopApiError'
     this.status = status
     this.needsVerification = needsVerification
+    this.needsSignIn = needsSignIn
   }
 }
 
@@ -95,6 +97,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     error?: string
     csrfToken?: string
     needsVerification?: boolean
+    needsSignIn?: boolean
   }
   if (data.csrfToken) csrfToken = data.csrfToken
   if (!response.ok) {
@@ -103,7 +106,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       typeof rawError === 'string' && rawError.trim()
         ? rawError
         : 'Something went wrong. Please try again.'
-    throw new ShopApiError(message, response.status, data.needsVerification === true)
+    throw new ShopApiError(
+      message,
+      response.status,
+      data.needsVerification === true,
+      data.needsSignIn === true,
+    )
   }
   return data
 }
@@ -165,6 +173,18 @@ export const shopApi = {
       { method: 'POST', body: JSON.stringify(body) },
     ),
   credits: () => request<{ credits: ShopCredits }>('/credits'),
+}
+
+export function isAllowedPaystackCheckoutUrl(value: string | undefined): boolean {
+  if (!value) return false
+  try {
+    const parsed = new URL(value)
+    if (parsed.protocol !== 'https:') return false
+    const host = parsed.hostname.toLowerCase()
+    return host === 'checkout.paystack.com' || host.endsWith('.paystack.com')
+  } catch {
+    return false
+  }
 }
 
 export function formatShopPrice(priceKobo: number, currency = 'NGN'): string {

@@ -4,6 +4,7 @@ import {
   shopApi,
   ShopApiError,
   formatShopPrice,
+  isAllowedPaystackCheckoutUrl,
   type ShopAccount,
   type ShopOrder,
   type ShopProduct,
@@ -230,7 +231,13 @@ async function placeOrder() {
     notice.value = `Order ${result.reference} has been received.`
     await loadAccountData()
     activeTab.value = 'orders'
-    if (result.payment?.authorizationUrl) window.location.assign(result.payment.authorizationUrl)
+    if (result.payment?.authorizationUrl) {
+      if (isAllowedPaystackCheckoutUrl(result.payment.authorizationUrl)) {
+        window.location.assign(result.payment.authorizationUrl)
+      } else {
+        notice.value = `Order ${result.reference} has been received. Open Paystack from your order if you still need to pay.`
+      }
+    }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unable to place the order.'
   } finally {
