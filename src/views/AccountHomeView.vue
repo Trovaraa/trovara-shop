@@ -417,15 +417,19 @@ async function checkLinkStatus() {
       if (hasLinkedChannels.value) {
         linkCode.value = ''
         showLinkForm.value = false
-        notice.value = telegramLinked.value
-          ? 'Telegram is linked to your shop account.'
-          : 'Your chat channel is linked.'
+        notice.value = telegramLinked.value && whatsappLinked.value
+          ? 'Telegram and WhatsApp are linked to your shop account.'
+          : telegramLinked.value
+            ? 'Telegram is linked to your shop account.'
+            : whatsappLinked.value
+              ? 'WhatsApp is linked to your shop account.'
+              : 'Your chat channel is linked.'
         stopLinkPoll()
       } else {
-        notice.value = 'Not linked yet. Send the link message in Telegram, then check again.'
+        notice.value = 'Not linked yet. Send the link message in Telegram or WhatsApp, then check again.'
       }
     } else {
-      notice.value = 'Not linked yet. Send the link message in Telegram, then check again.'
+      notice.value = 'Not linked yet. Send the link message in Telegram or WhatsApp, then check again.'
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unable to check link status.'
@@ -902,10 +906,16 @@ const tabClass = (on: boolean) =>
 
     <section v-else class="mx-auto max-w-3xl">
       <h2 class="text-2xl font-black text-os-fg">
-        {{ telegramLinked ? 'Telegram linked' : 'Connect Telegram (or WhatsApp later)' }}
+        {{ telegramLinked && whatsappLinked
+          ? 'Telegram and WhatsApp linked'
+          : telegramLinked
+            ? 'Telegram linked'
+            : whatsappLinked
+              ? 'WhatsApp linked'
+              : 'Connect Telegram or WhatsApp' }}
       </h2>
       <p class="mt-3 leading-7 text-slate-400">
-        Website orders only appear in chat after you link. Create a code, open the Telegram customer bot, and send
+        Website orders only appear in chat after you link. Create a code, open the Trovara customer bot on Telegram or WhatsApp, and send
         <code class="rounded bg-slate-800 px-1.5 py-0.5 text-sm font-semibold text-os-fg">link YOURCODE</code>.
       </p>
       <div v-if="account" :class="cardClass" class="mt-6">
@@ -922,7 +932,7 @@ const tabClass = (on: boolean) =>
             {{ busy ? 'Creating…' : 'Create a secure link code' }}
           </button>
           <div v-else class="rounded-2xl bg-slate-950 p-6">
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Send this exact message to the Telegram customer bot</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Send this exact message to the Trovara customer bot</p>
             <div class="mt-3 flex flex-wrap items-center justify-between gap-4">
               <code class="text-xl font-black text-farm-gold">link {{ linkCode }}</code>
               <button type="button" class="rounded-xl bg-slate-800 px-4 py-2 text-sm font-bold" @click="copyLinkCommand">Copy</button>
@@ -930,6 +940,7 @@ const tabClass = (on: boolean) =>
             <p class="mt-3 text-xs text-slate-500">Expires {{ new Date(linkExpiry).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }} and works once.</p>
             <div class="mt-5 flex flex-wrap gap-3">
               <a v-if="TELEGRAM_ORDER_URL" :href="TELEGRAM_ORDER_URL" target="_blank" rel="noopener" class="rounded-xl bg-[#229ED9] px-4 py-3 text-sm font-bold text-white">Open Telegram</a>
+              <a :href="buildWhatsAppLink(`link ${linkCode}`)" target="_blank" rel="noopener" class="rounded-xl bg-[#25D366] px-4 py-3 text-sm font-bold text-white">Open WhatsApp</a>
               <button type="button" class="rounded-xl bg-slate-800 px-4 py-3 text-sm font-bold" :disabled="busy" @click="checkLinkStatus">
                 {{ busy ? 'Checking…' : "I've sent it. Check status" }}
               </button>

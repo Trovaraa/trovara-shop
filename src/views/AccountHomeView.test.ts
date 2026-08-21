@@ -64,6 +64,10 @@ vi.mock('@/lib/shop', () => {
       }),
       orders: vi.fn().mockResolvedValue({ orders: [] }),
       me: vi.fn().mockResolvedValue({ account: {}, channels: [] }),
+      linkCode: vi.fn().mockResolvedValue({
+        code: 'ABC123',
+        expiresAt: '2099-01-01T12:00:00.000Z',
+      }),
       credits: vi.fn().mockResolvedValue({
         credits: {
           balance: 0,
@@ -122,5 +126,35 @@ describe('AccountHomeView credit status', () => {
     expect(wrapper.text()).toContain('2 kg included in your Family Basket and cannot be removed.')
     expect(wrapper.text()).toContain('1 kg included in your Family Basket and cannot be removed.')
     expect(wrapper.text()).toContain('Standard Family Basket item')
+  })
+
+  it('links the shop account through Telegram or the live WhatsApp bot', async () => {
+    const wrapper = mount(AccountHomeView)
+    await flushPromises()
+
+    const connectTab = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Connect chat'))
+    expect(connectTab).toBeDefined()
+    await connectTab!.trigger('click')
+
+    expect(wrapper.text()).toContain('Connect Telegram or WhatsApp')
+    expect(wrapper.text()).not.toContain('WhatsApp later')
+
+    const createCodeButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Create a secure link code'))
+    expect(createCodeButton).toBeDefined()
+    await createCodeButton!.trigger('click')
+    await flushPromises()
+
+    const whatsappLink = wrapper
+      .findAll('a')
+      .find((link) => link.text().includes('Open WhatsApp'))
+    expect(whatsappLink?.attributes('href')).toBe(
+      'https://wa.me/2348031350724?text=link%20ABC123',
+    )
+
+    wrapper.unmount()
   })
 })
