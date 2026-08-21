@@ -9,6 +9,9 @@ import {
   type ShopOrder,
   type ShopProduct,
   type ShopCredits,
+  type ShopDeliverySlot,
+  type ShopDraftBasket,
+  type ShopRecurringOrder,
 } from '@/lib/shop'
 import { buildWhatsAppLink } from '@/lib/whatsapp'
 import { TELEGRAM_ORDER_URL } from '@/lib/telegram'
@@ -30,17 +33,27 @@ const activeTab = ref<Tab>('shop')
 const authMode = ref<AuthMode>('register')
 const account = ref<ShopAccount | null>(null)
 const products = ref<ShopProduct[]>([])
+const deliverySlots = ref<ShopDeliverySlot[]>([])
 const orders = ref<ShopOrder[]>([])
+const recurringOrders = ref<ShopRecurringOrder[]>([])
 const credits = ref<ShopCredits | null>(null)
 const channels = ref<{ channel: string; name: string | null }[]>([])
 const linkCode = ref('')
 const linkExpiry = ref('')
 const showLinkForm = ref(false)
 const cart = reactive<Record<string, number>>({})
+const familyBasketActive = ref(false)
 const showCheckout = ref(false)
 const needsVerification = ref(false)
 const authForm = reactive({ name: '', email: '', phone: '', password: '' })
-const checkoutForm = reactive({ address: '', phone: '' })
+const checkoutForm = reactive({
+  address: '',
+  phone: '',
+  deliverySlotId: '',
+  deliveryDate: '',
+  recurrenceFrequency: '' as '' | 'weekly' | 'fortnightly' | 'monthly',
+  recurringOrderId: '',
+})
 
 const telegramLinked = computed(() =>
   channels.value.some((channel) => channel.channel.toLowerCase() === 'telegram'),
@@ -58,8 +71,19 @@ const cartCount = computed(() => cartLines.value.reduce((sum, line) => sum + lin
 const cartTotalKobo = computed(() =>
   cartLines.value.reduce((sum, line) => sum + line.product.priceKobo * line.quantity, 0),
 )
+const familyBasketProducts = computed(() =>
+  products.value.filter((product) => product.familyBasketQuantity > 0),
+)
+const familyBasketPriceKobo = computed(() =>
+  familyBasketProducts.value.reduce(
+    (sum, product) => sum + product.priceKobo * product.familyBasketQuantity,
+    0,
+  ),
+)
+const latestOrder = computed(() => orders.value[0] ?? null)
 
 let linkPollTimer: ReturnType<typeof setInterval> | null = null
+let basketSyncTimer: ReturnType<typeof setTimeout> | null = null
 
 function stopLinkPoll() {
   if (linkPollTimer) {
@@ -68,8 +92,99 @@ function stopLinkPoll() {
   }
 }
 
+function stopBasketSync() {
+  if (basketSyncTimer) {
+    clearTimeout(basketSyncTimer)
+    basketSyncTimer = null
+  }
+}
+
+function basketPayload() {
+  return {
+    items: cartLines.value.map((line) => ({
+      productId: line.product.id,
+      quantity: line.quantity,
+    })),
+    familyBasketActive: familyBasketActive.value,
+  }
+}
+
+async function syncBasket() {
+  stopBasketSync()
+  if (!account.value) return
+  try {
+    await shopApi.saveBasket(basketPayload())
+  } catch {
+    sessionWarning.value = 'Your basket is still on this device, but it could not be synced to your account or linked chat.'
+  }
+}
+
+function scheduleBasketSync() {
+  if (!account.value) return
+  stopBasketSync()
+  basketSyncTimer = setTimeout(() => void syncBasket(), 300)
+}
+
+function hydrateBasket(basket: ShopDraftBasket) {
+  for (const key of Object.keys(cart)) delete cart[key]
+  const activeIds = new Set(products.value.map((product) => product.id))
+  for (const item of basket.items) {
+    if (activeIds.has(item.productId)) cart[item.productId] = item.quantity
+  }
+  familyBasketActive.value = basket.familyBasketActive && basket.items.length > 0
+}
+
+function minimumQuantity(productId: string) {
+  if (!familyBasketActive.value) return 0
+  return products.value.find((product) => product.id === productId)?.familyBasketQuantity ?? 0
+}
+
 function setQuantity(productId: string, quantity: number) {
-  cart[productId] = Math.max(0, Math.min(100, quantity))
+  cart[productId] = Math.max(minimumQuantity(productId), Math.min(100, quantity))
+  scheduleBasketSync()
+}
+
+function buildFamilyBasket() {
+  familyBasketActive.value = true
+  for (const product of familyBasketProducts.value) {
+    cart[product.id] = Math.max(cart[product.id] ?? 0, product.familyBasketQuantity)
+  }
+  scheduleBasketSync()
+  document.getElementById('shop-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function clearBasket(sync = true) {
+  for (const key of Object.keys(cart)) delete cart[key]
+  familyBasketActive.value = false
+  if (sync) scheduleBasketSync()
+}
+
+function dateInputValue(date: Date) {
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function nextDeliveryDate(slot: ShopDeliverySlot | undefined) {
+  if (!slot) return ''
+  const now = new Date()
+  const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+  const daysAhead = (slot.dayOfWeek - candidate.getUTCDay() + 7) % 7
+  candidate.setUTCDate(candidate.getUTCDate() + daysAhead)
+  const [hour, minute] = slot.startTime.split(':').map(Number)
+  candidate.setUTCHours(hour, minute, 0, 0)
+  if (candidate.getTime() - now.getTime() < slot.cutoffHours * 60 * 60 * 1000) {
+    candidate.setUTCDate(candidate.getUTCDate() + 7)
+  }
+  return dateInputValue(candidate)
+}
+
+function selectDeliverySlot(slotId: string) {
+  checkoutForm.deliverySlotId = slotId
+  checkoutForm.deliveryDate = nextDeliveryDate(
+    deliverySlots.value.find((slot) => slot.id === slotId),
+  )
 }
 
 function clearMessages() {
@@ -93,11 +208,6 @@ function scrollToAccount() {
   document.getElementById('shop-account')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
-function goCreateAccount() {
-  setAuthMode('register')
-  scrollToAccount()
-}
-
 async function refreshChannels() {
   if (!account.value) return
   const me = await shopApi.me()
@@ -106,14 +216,22 @@ async function refreshChannels() {
 
 async function loadAccountData() {
   if (!account.value) return
-  const [orderData, me, creditData] = await Promise.all([
+  const hadLocalBasket = cartCount.value > 0
+  const [orderData, me, creditData, recurringData, basketData] = await Promise.all([
     shopApi.orders(),
     shopApi.me(),
     shopApi.credits(),
+    (shopApi.recurringOrders?.() ?? Promise.resolve({ recurringOrders: [] })).catch(() => ({
+      recurringOrders: [],
+    })),
+    shopApi.basket(),
   ])
   orders.value = orderData.orders
   channels.value = me.channels
   credits.value = creditData.credits
+  recurringOrders.value = recurringData.recurringOrders
+  if (hadLocalBasket) scheduleBasketSync()
+  else hydrateBasket(basketData.basket)
 }
 
 async function submitAuth() {
@@ -189,11 +307,13 @@ async function logout() {
     await shopApi.logout()
     account.value = null
     orders.value = []
+    recurringOrders.value = []
     credits.value = null
     channels.value = []
     linkCode.value = ''
     showLinkForm.value = false
     stopLinkPoll()
+    stopBasketSync()
     activeTab.value = 'shop'
   } finally {
     busy.value = false
@@ -211,7 +331,60 @@ function beginCheckout() {
     return
   }
   checkoutForm.phone = checkoutForm.phone || account.value.phone || ''
+  checkoutForm.recurringOrderId = ''
+  if (deliverySlots.value.length && !checkoutForm.deliverySlotId) {
+    selectDeliverySlot(deliverySlots.value[0].id)
+  }
   showCheckout.value = true
+}
+
+function reorder(order: ShopOrder) {
+  clearMessages()
+  clearBasket(false)
+  for (const item of order.items) {
+    if (item.productId && products.value.some((product) => product.id === item.productId)) {
+      cart[item.productId] = item.quantity
+    }
+  }
+  if (!cartCount.value) {
+    error.value = 'The products from this order are not currently available.'
+    return
+  }
+  scheduleBasketSync()
+  activeTab.value = 'shop'
+  beginCheckout()
+}
+
+function reviewRecurring(plan: ShopRecurringOrder) {
+  clearMessages()
+  clearBasket(false)
+  for (const item of plan.items) {
+    if (products.value.some((product) => product.id === item.productId)) {
+      cart[item.productId] = item.quantity
+    }
+  }
+  checkoutForm.address = plan.address
+  checkoutForm.phone = plan.phone || account.value?.phone || ''
+  checkoutForm.recurrenceFrequency = plan.frequency
+  checkoutForm.recurringOrderId = plan.id
+  if (plan.deliverySlotId) selectDeliverySlot(plan.deliverySlotId)
+  scheduleBasketSync()
+  activeTab.value = 'shop'
+  showCheckout.value = true
+}
+
+async function stopRecurring(plan: ShopRecurringOrder) {
+  clearMessages()
+  busy.value = true
+  try {
+    await shopApi.cancelRecurringOrder(plan.id)
+    notice.value = 'Recurring basket stopped. No future checkout reminders will be created.'
+    await loadAccountData()
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to stop the recurring basket.'
+  } finally {
+    busy.value = false
+  }
 }
 
 async function placeOrder() {
@@ -225,8 +398,12 @@ async function placeOrder() {
       })),
       address: checkoutForm.address,
       phone: checkoutForm.phone || undefined,
+      deliverySlotId: checkoutForm.deliverySlotId || undefined,
+      deliveryDate: checkoutForm.deliveryDate || undefined,
+      recurrenceFrequency: checkoutForm.recurrenceFrequency || undefined,
+      recurringOrderId: checkoutForm.recurringOrderId || undefined,
     })
-    for (const key of Object.keys(cart)) delete cart[key]
+    clearBasket()
     showCheckout.value = false
     notice.value = `Order ${result.reference} has been received.`
     await loadAccountData()
@@ -294,15 +471,19 @@ async function checkLinkStatus() {
       if (hasLinkedChannels.value) {
         linkCode.value = ''
         showLinkForm.value = false
-        notice.value = telegramLinked.value
-          ? 'Telegram is linked to your shop account.'
-          : 'Your chat channel is linked.'
+        notice.value = telegramLinked.value && whatsappLinked.value
+          ? 'Telegram and WhatsApp are linked to your shop account.'
+          : telegramLinked.value
+            ? 'Telegram is linked to your shop account.'
+            : whatsappLinked.value
+              ? 'WhatsApp is linked to your shop account.'
+              : 'Your chat channel is linked.'
         stopLinkPoll()
       } else {
-        notice.value = 'Not linked yet. Send the link message in Telegram, then check again.'
+        notice.value = 'Not linked yet. Send the link message in Telegram or WhatsApp, then check again.'
       }
     } else {
-      notice.value = 'Not linked yet. Send the link message in Telegram, then check again.'
+      notice.value = 'Not linked yet. Send the link message in Telegram or WhatsApp, then check again.'
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unable to check link status.'
@@ -335,7 +516,10 @@ watch(activeTab, (tab) => {
   }
 })
 
-onUnmounted(stopLinkPoll)
+onUnmounted(() => {
+  stopLinkPoll()
+  stopBasketSync()
+})
 
 async function loadShop() {
   loading.value = true
@@ -348,8 +532,10 @@ async function loadShop() {
   ])
   if (catalogResult.status === 'fulfilled') {
     products.value = catalogResult.value.products ?? []
+    deliverySlots.value = catalogResult.value.deliverySlots ?? []
   } else {
     products.value = []
+    deliverySlots.value = []
     catalogWarning.value = 'Live checkout is unavailable right now. Product forecasts and waitlists are still available.'
   }
   if (sessionResult.status === 'fulfilled') {
@@ -383,14 +569,28 @@ const tabClass = (on: boolean) =>
   <div>
     <section class="mb-8 grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,420px)]">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.24em] text-farm-gold">Trovara Farm Account</p>
-        <h1 class="mt-3 text-3xl font-black text-os-fg sm:text-4xl">One account for every Trovara order.</h1>
+        <p class="text-xs font-black uppercase tracking-[0.24em] text-farm-gold">Fresh this week</p>
+        <h1 class="mt-3 text-3xl font-black text-os-fg sm:text-5xl">Good food for the week.</h1>
         <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
-          Create an account before harvest opens. It keeps website orders, chat updates, and traceability links together when products become available.
+          Build a Family Basket from Trovara Farm products and food supplied by trusted farmers.
         </p>
         <div class="mt-6 flex flex-wrap gap-3">
-          <a href="#shop-account" class="rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white hover:bg-farm-green-dark" @click.prevent="goCreateAccount">Create account</a>
-          <a :href="FARM_PRODUCTS_URL" class="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800">Join product waitlists</a>
+          <button
+            type="button"
+            class="rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white hover:bg-farm-green-dark disabled:opacity-50"
+            :disabled="!familyBasketProducts.length"
+            @click="buildFamilyBasket"
+          >
+            Build my Family Basket
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-os-fg hover:bg-slate-800 disabled:opacity-50"
+            :disabled="!latestOrder"
+            @click="latestOrder && reorder(latestOrder)"
+          >
+            Buy again
+          </button>
         </div>
       </div>
       <ShopHeroArt class="mx-auto w-full max-w-md" />
@@ -451,22 +651,51 @@ const tabClass = (on: boolean) =>
     <div v-if="loading" class="grid min-h-64 place-items-center text-slate-500">Loading your account…</div>
 
     <div v-else-if="activeTab === 'shop'" class="grid gap-8" :class="products.length ? 'lg:grid-cols-[minmax(0,1fr)_23rem]' : 'grid-cols-1'">
-      <section>
+      <section id="shop-products">
         <div class="mb-6">
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">{{ products.length ? 'Open SKUs' : 'Harvest catalogue' }}</p>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">{{ products.length ? 'This week at Trovara' : 'Harvest catalogue' }}</p>
           <h2 class="mt-2 text-2xl font-black text-os-fg">Farm shop</h2>
         </div>
+        <article
+          v-if="familyBasketProducts.length"
+          class="mb-6 rounded-3xl border border-farm-green/35 bg-farm-green/10 p-5 sm:p-6"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">Family Basket</p>
+              <h3 class="mt-2 text-xl font-black text-os-fg">Your weekly essentials, ready to customise</h3>
+              <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                The standard items stay in the basket. You can increase their quantities and add anything else below.
+              </p>
+              <p class="mt-3 text-sm text-slate-300">
+                <span v-for="(product, index) in familyBasketProducts" :key="product.id">
+                  {{ product.familyBasketQuantity }} {{ product.unit }} {{ product.name }}<span v-if="index < familyBasketProducts.length - 1"> · </span>
+                </span>
+              </p>
+            </div>
+            <div class="text-left sm:text-right">
+              <p class="text-2xl font-black text-farm-green">{{ formatShopPrice(familyBasketPriceKobo) }}</p>
+              <button type="button" class="mt-3 rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white" @click="buildFamilyBasket">
+                {{ familyBasketActive ? 'Family Basket added' : 'Build my basket' }}
+              </button>
+            </div>
+          </div>
+        </article>
         <div v-if="products.length" class="grid gap-5 sm:grid-cols-2">
           <article v-for="product in products" :key="product.id" class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80">
             <div class="relative h-44 bg-slate-950">
               <img v-if="productImage(product.name)" :src="productImage(product.name)!" :alt="product.name" class="h-full w-full object-cover" />
-              <span class="absolute left-4 top-4 rounded-full bg-slate-950/80 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-farm-green">{{ product.sku }}</span>
+              <span class="absolute left-4 top-4 rounded-full bg-slate-950/85 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-farm-green">{{ product.sku }}</span>
+              <span class="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#123a22]">
+                {{ product.provenance === 'trovara_sourced' ? 'Trovara Sourced' : 'Trovara grown · Traceable' }}
+              </span>
             </div>
             <div class="p-4 sm:p-5">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 class="text-lg font-black text-os-fg">{{ product.name }}</h3>
                   <p class="mt-1 text-xs text-slate-500">Sold per {{ product.unit }}</p>
+                  <p v-if="product.description" class="mt-2 text-xs leading-5 text-slate-400">{{ product.description }}</p>
                 </div>
                 <p class="shrink-0 font-black text-farm-green">{{ formatShopPrice(product.priceKobo, product.currency) }}</p>
               </div>
@@ -478,6 +707,9 @@ const tabClass = (on: boolean) =>
                 </div>
                 <button type="button" class="rounded-xl bg-farm-green px-4 py-3 text-sm font-bold text-white" @click="setQuantity(product.id, Math.max(1, cart[product.id] ?? 0))">Add to basket</button>
               </div>
+              <p v-if="familyBasketActive && product.familyBasketQuantity > 0" class="mt-3 text-xs font-semibold text-farm-green">
+                {{ product.familyBasketQuantity }} {{ product.unit }} included in your Family Basket and cannot be removed.
+              </p>
             </div>
           </article>
         </div>
@@ -500,6 +732,12 @@ const tabClass = (on: boolean) =>
             <div>
               <p class="font-bold text-os-fg">{{ line.product.name }}</p>
               <p class="text-slate-500">{{ line.quantity }} × {{ line.product.unit }}</p>
+              <p class="mt-1 text-[11px] font-bold uppercase tracking-wide text-farm-green">
+                {{ line.product.provenance === 'trovara_sourced' ? 'Trovara Sourced' : 'Traceable' }}
+              </p>
+              <p v-if="familyBasketActive && line.product.familyBasketQuantity > 0" class="mt-1 text-[11px] text-slate-500">
+                Standard Family Basket item
+              </p>
             </div>
             <p class="font-bold">{{ formatShopPrice(line.product.priceKobo * line.quantity, line.product.currency) }}</p>
           </div>
@@ -511,6 +749,9 @@ const tabClass = (on: boolean) =>
           <span class="font-bold">Estimated total</span>
           <strong class="text-xl text-farm-green">{{ formatShopPrice(cartTotalKobo) }}</strong>
         </div>
+        <p v-if="account && cartLines.length" class="mt-3 text-xs leading-5 text-slate-500">
+          Saved to your account so your linked WhatsApp or Telegram bot can see it.
+        </p>
         <button type="button" class="mt-5 w-full rounded-xl bg-farm-green py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="!cartCount" @click="beginCheckout">Continue to checkout</button>
         <div class="mt-5 border-t border-slate-800 pt-5">
           <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Or continue with a chat assistant</p>
@@ -655,19 +896,51 @@ const tabClass = (on: boolean) =>
     <section v-else-if="activeTab === 'orders'" class="mx-auto max-w-4xl">
       <h2 class="text-2xl font-black text-os-fg">Your orders</h2>
       <div v-if="!account" :class="cardClass" class="mt-6 text-slate-400">Sign in below to see orders placed on the website, WhatsApp, or Telegram.</div>
-      <div v-else-if="orders.length" class="mt-6 space-y-4">
+      <div v-else>
+        <article v-if="recurringOrders.length" :class="cardClass" class="mt-6">
+          <h3 class="text-xl font-black text-os-fg">Upcoming basket checkouts</h3>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Recurring baskets are reminders, not automatic orders. Review each basket and approve payment at checkout.
+          </p>
+          <div class="mt-4 space-y-3">
+            <div
+              v-for="plan in recurringOrders"
+              :key="plan.id"
+              class="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p class="font-black capitalize text-os-fg">{{ plan.frequency }} Family Basket</p>
+                <p class="mt-1 text-xs leading-5 text-slate-500">
+                  Review due {{ new Date(plan.nextCheckoutAt).toLocaleDateString('en-NG') }}
+                  <template v-if="plan.deliveryLabel"> · {{ plan.deliveryLabel }}</template>
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="rounded-xl bg-farm-green px-4 py-3 text-sm font-bold text-white" @click="reviewRecurring(plan)">Review & checkout</button>
+                <button type="button" class="rounded-xl border border-slate-700 px-4 py-3 text-sm font-bold text-slate-300" :disabled="busy" @click="stopRecurring(plan)">Stop recurring</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      <div v-if="orders.length" class="mt-6 space-y-4">
         <article v-for="order in orders" :key="order.id" :class="cardClass">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p class="text-xs font-black uppercase tracking-wider text-farm-green">{{ order.reference }}</p>
               <h3 class="mt-1 text-xl font-black capitalize text-os-fg">{{ order.status.replace('_', ' ') }}</h3>
               <p class="mt-1 text-xs text-slate-500">Ordered {{ new Date(order.createdAt).toLocaleDateString('en-NG') }} via {{ order.source }}</p>
+              <p v-if="order.deliveryDate" class="mt-1 text-xs font-semibold text-farm-green">
+                Delivery {{ new Date(`${order.deliveryDate}T12:00:00`).toLocaleDateString('en-NG') }}<template v-if="order.deliveryLabel"> · {{ order.deliveryLabel }}</template>
+              </p>
             </div>
             <span class="rounded-full bg-slate-800 px-3 py-1 text-xs font-bold capitalize">{{ order.paymentStatus.replace('_', ' ') }}</span>
           </div>
           <ul class="mt-5 space-y-2 border-t border-slate-800 pt-4 text-sm">
             <li v-for="item in order.items" :key="`${order.id}-${item.productName}`" class="flex justify-between gap-4">
-              <span>{{ item.productName }}</span>
+              <span>
+                {{ item.productName }}
+                <small v-if="item.provenance === 'trovara_sourced'" class="ml-2 rounded-full bg-farm-gold/10 px-2 py-1 font-bold text-farm-gold">Trovara Sourced</small>
+              </span>
               <span class="text-slate-500">{{ item.quantity }} {{ item.unit }}</span>
             </li>
           </ul>
@@ -678,20 +951,31 @@ const tabClass = (on: boolean) =>
             rel="noopener"
             class="mt-5 inline-flex items-center gap-2 rounded-xl border border-farm-green px-4 py-3 text-sm font-bold text-farm-green"
           >
-            Open traceability record →
+            Open traceability record for Trovara-grown items →
           </a>
-          <p v-else class="mt-5 text-xs text-slate-500">Your traceability link will appear here when the lot is verified.</p>
+          <p v-else-if="order.items.every((item) => item.provenance === 'trovara_sourced')" class="mt-5 text-xs text-slate-500">
+            This order contains Trovara Sourced products from trusted farmers, so it does not have Trovara farm-lot traceability.
+          </p>
+          <p v-else class="mt-5 text-xs text-slate-500">Your traceability link will appear here when the Trovara-grown lot is verified.</p>
+          <button type="button" class="mt-4 rounded-xl border border-slate-700 px-4 py-3 text-sm font-bold text-os-fg" @click="reorder(order)">Order again</button>
         </article>
       </div>
-      <div v-else-if="account" :class="cardClass" class="mt-6 text-center text-slate-500">No orders yet. Your first order will appear here.</div>
+      <div v-else :class="cardClass" class="mt-6 text-center text-slate-500">No orders yet. Your first order will appear here.</div>
+      </div>
     </section>
 
     <section v-else class="mx-auto max-w-3xl">
       <h2 class="text-2xl font-black text-os-fg">
-        {{ telegramLinked ? 'Telegram linked' : 'Connect Telegram (or WhatsApp later)' }}
+        {{ telegramLinked && whatsappLinked
+          ? 'Telegram and WhatsApp linked'
+          : telegramLinked
+            ? 'Telegram linked'
+            : whatsappLinked
+              ? 'WhatsApp linked'
+              : 'Connect Telegram or WhatsApp' }}
       </h2>
       <p class="mt-3 leading-7 text-slate-400">
-        Website orders only appear in chat after you link. Create a code, open the Telegram customer bot, and send
+        Website orders only appear in chat after you link. Create a code, open the Trovara customer bot on Telegram or WhatsApp, and send
         <code class="rounded bg-slate-800 px-1.5 py-0.5 text-sm font-semibold text-os-fg">link YOURCODE</code>.
       </p>
       <div v-if="account" :class="cardClass" class="mt-6">
@@ -708,7 +992,7 @@ const tabClass = (on: boolean) =>
             {{ busy ? 'Creating…' : 'Create a secure link code' }}
           </button>
           <div v-else class="rounded-2xl bg-slate-950 p-6">
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Send this exact message to the Telegram customer bot</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Send this exact message to the Trovara customer bot</p>
             <div class="mt-3 flex flex-wrap items-center justify-between gap-4">
               <code class="text-xl font-black text-farm-gold">link {{ linkCode }}</code>
               <button type="button" class="rounded-xl bg-slate-800 px-4 py-2 text-sm font-bold" @click="copyLinkCommand">Copy</button>
@@ -716,6 +1000,7 @@ const tabClass = (on: boolean) =>
             <p class="mt-3 text-xs text-slate-500">Expires {{ new Date(linkExpiry).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }} and works once.</p>
             <div class="mt-5 flex flex-wrap gap-3">
               <a v-if="TELEGRAM_ORDER_URL" :href="TELEGRAM_ORDER_URL" target="_blank" rel="noopener" class="rounded-xl bg-[#229ED9] px-4 py-3 text-sm font-bold text-white">Open Telegram</a>
+              <a :href="buildWhatsAppLink(`link ${linkCode}`)" target="_blank" rel="noopener" class="rounded-xl bg-[#25D366] px-4 py-3 text-sm font-bold text-white">Open WhatsApp</a>
               <button type="button" class="rounded-xl bg-slate-800 px-4 py-3 text-sm font-bold" :disabled="busy" @click="checkLinkStatus">
                 {{ busy ? 'Checking…' : "I've sent it. Check status" }}
               </button>
@@ -806,11 +1091,43 @@ const tabClass = (on: boolean) =>
         </div>
         <label class="mt-6 block text-sm font-bold text-os-fg">Delivery address<textarea v-model="checkoutForm.address" required minlength="5" rows="4" :class="fieldClass" class="py-3" /></label>
         <label class="mt-4 block text-sm font-bold text-os-fg">Delivery phone<input v-model="checkoutForm.phone" type="tel" :class="fieldClass" /></label>
+        <div v-if="deliverySlots.length" class="mt-4 grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm font-bold text-os-fg">
+            Delivery window
+            <select
+              v-model="checkoutForm.deliverySlotId"
+              required
+              :class="fieldClass"
+              @change="selectDeliverySlot(checkoutForm.deliverySlotId)"
+            >
+              <option value="" disabled>Select a delivery window</option>
+              <option v-for="slot in deliverySlots" :key="slot.id" :value="slot.id">
+                {{ slot.label }} · {{ slot.startTime }}–{{ slot.endTime }}
+              </option>
+            </select>
+          </label>
+          <label class="block text-sm font-bold text-os-fg">
+            Delivery date
+            <input v-model="checkoutForm.deliveryDate" required type="date" :class="fieldClass" />
+          </label>
+        </div>
+        <label class="mt-4 block text-sm font-bold text-os-fg">
+          Repeat this basket <span class="font-normal text-slate-500">(optional)</span>
+          <select v-model="checkoutForm.recurrenceFrequency" :class="fieldClass">
+            <option value="">One-time order</option>
+            <option value="weekly">Every week</option>
+            <option value="fortnightly">Every 2 weeks</option>
+            <option value="monthly">Every month</option>
+          </select>
+        </label>
+        <p v-if="checkoutForm.recurrenceFrequency" class="mt-3 rounded-xl border border-farm-gold/30 bg-farm-gold/10 p-4 text-xs leading-5 text-slate-300">
+          We will prepare the same basket as a future checkout reminder. Nothing is charged or ordered automatically: you must review and approve every repeat order.
+        </p>
         <div class="mt-6 flex items-center justify-between border-t border-slate-800 pt-5">
           <span class="font-bold">Estimated total</span>
           <strong class="text-xl text-farm-green">{{ formatShopPrice(cartTotalKobo) }}</strong>
         </div>
-        <button type="submit" class="mt-5 w-full rounded-xl bg-farm-green py-3 text-sm font-bold text-white" :disabled="busy">{{ busy ? 'Placing order…' : 'Place order' }}</button>
+        <button type="submit" class="mt-5 w-full rounded-xl bg-farm-green py-3 text-sm font-bold text-white" :disabled="busy">{{ busy ? 'Opening secure checkout…' : 'Review payment & place order' }}</button>
       </form>
     </div>
   </div>

@@ -5,7 +5,7 @@
   <path d="M0 486c204-91 407-93 610-6s399 91 590 14v136H0Z" fill="#31483C"/>
   <path d="M0 530c211-70 412-64 603 17s390 81 597 5" fill="none" stroke="#889058" stroke-width="6" opacity=".65"/>
 
-  <!-- Shopping bags (Accounts mark  not OS gears) -->
+  <!-- Shopping bags (account mark, not OS gears) -->
   <g transform="translate(760 118)" opacity=".95">
     <path d="M86 56c0-36 28-62 64-62s64 26 64 62" fill="none" stroke="#B8C27A" stroke-width="16" stroke-linecap="round"/>
     <path d="M28 74h248l-22 292H50Z" fill="#2d9960"/>

@@ -1,4 +1,4 @@
-export const PHONE = '2348103693426'
+export const PHONE = '2348031350724'
 
 export function buildWhatsAppLink(message?: string): string {
   const trimmedMessage = message?.trim()
