@@ -10,6 +10,7 @@ import {
   type ShopProduct,
   type ShopCredits,
   type ShopDeliverySlot,
+  type ShopDraftBasket,
   type ShopRecurringOrder,
 } from '@/lib/shop'
 import { buildWhatsAppLink } from '@/lib/whatsapp'
@@ -82,12 +83,55 @@ const familyBasketPriceKobo = computed(() =>
 const latestOrder = computed(() => orders.value[0] ?? null)
 
 let linkPollTimer: ReturnType<typeof setInterval> | null = null
+let basketSyncTimer: ReturnType<typeof setTimeout> | null = null
 
 function stopLinkPoll() {
   if (linkPollTimer) {
     clearInterval(linkPollTimer)
     linkPollTimer = null
   }
+}
+
+function stopBasketSync() {
+  if (basketSyncTimer) {
+    clearTimeout(basketSyncTimer)
+    basketSyncTimer = null
+  }
+}
+
+function basketPayload() {
+  return {
+    items: cartLines.value.map((line) => ({
+      productId: line.product.id,
+      quantity: line.quantity,
+    })),
+    familyBasketActive: familyBasketActive.value,
+  }
+}
+
+async function syncBasket() {
+  stopBasketSync()
+  if (!account.value) return
+  try {
+    await shopApi.saveBasket(basketPayload())
+  } catch {
+    sessionWarning.value = 'Your basket is still on this device, but it could not be synced to your account or linked chat.'
+  }
+}
+
+function scheduleBasketSync() {
+  if (!account.value) return
+  stopBasketSync()
+  basketSyncTimer = setTimeout(() => void syncBasket(), 300)
+}
+
+function hydrateBasket(basket: ShopDraftBasket) {
+  for (const key of Object.keys(cart)) delete cart[key]
+  const activeIds = new Set(products.value.map((product) => product.id))
+  for (const item of basket.items) {
+    if (activeIds.has(item.productId)) cart[item.productId] = item.quantity
+  }
+  familyBasketActive.value = basket.familyBasketActive && basket.items.length > 0
 }
 
 function minimumQuantity(productId: string) {
@@ -97,6 +141,7 @@ function minimumQuantity(productId: string) {
 
 function setQuantity(productId: string, quantity: number) {
   cart[productId] = Math.max(minimumQuantity(productId), Math.min(100, quantity))
+  scheduleBasketSync()
 }
 
 function buildFamilyBasket() {
@@ -104,12 +149,14 @@ function buildFamilyBasket() {
   for (const product of familyBasketProducts.value) {
     cart[product.id] = Math.max(cart[product.id] ?? 0, product.familyBasketQuantity)
   }
+  scheduleBasketSync()
   document.getElementById('shop-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function clearBasket() {
+function clearBasket(sync = true) {
   for (const key of Object.keys(cart)) delete cart[key]
   familyBasketActive.value = false
+  if (sync) scheduleBasketSync()
 }
 
 function dateInputValue(date: Date) {
@@ -169,18 +216,22 @@ async function refreshChannels() {
 
 async function loadAccountData() {
   if (!account.value) return
-  const [orderData, me, creditData, recurringData] = await Promise.all([
+  const hadLocalBasket = cartCount.value > 0
+  const [orderData, me, creditData, recurringData, basketData] = await Promise.all([
     shopApi.orders(),
     shopApi.me(),
     shopApi.credits(),
     (shopApi.recurringOrders?.() ?? Promise.resolve({ recurringOrders: [] })).catch(() => ({
       recurringOrders: [],
     })),
+    shopApi.basket(),
   ])
   orders.value = orderData.orders
   channels.value = me.channels
   credits.value = creditData.credits
   recurringOrders.value = recurringData.recurringOrders
+  if (hadLocalBasket) scheduleBasketSync()
+  else hydrateBasket(basketData.basket)
 }
 
 async function submitAuth() {
@@ -262,6 +313,7 @@ async function logout() {
     linkCode.value = ''
     showLinkForm.value = false
     stopLinkPoll()
+    stopBasketSync()
     activeTab.value = 'shop'
   } finally {
     busy.value = false
@@ -288,7 +340,7 @@ function beginCheckout() {
 
 function reorder(order: ShopOrder) {
   clearMessages()
-  clearBasket()
+  clearBasket(false)
   for (const item of order.items) {
     if (item.productId && products.value.some((product) => product.id === item.productId)) {
       cart[item.productId] = item.quantity
@@ -298,13 +350,14 @@ function reorder(order: ShopOrder) {
     error.value = 'The products from this order are not currently available.'
     return
   }
+  scheduleBasketSync()
   activeTab.value = 'shop'
   beginCheckout()
 }
 
 function reviewRecurring(plan: ShopRecurringOrder) {
   clearMessages()
-  clearBasket()
+  clearBasket(false)
   for (const item of plan.items) {
     if (products.value.some((product) => product.id === item.productId)) {
       cart[item.productId] = item.quantity
@@ -315,6 +368,7 @@ function reviewRecurring(plan: ShopRecurringOrder) {
   checkoutForm.recurrenceFrequency = plan.frequency
   checkoutForm.recurringOrderId = plan.id
   if (plan.deliverySlotId) selectDeliverySlot(plan.deliverySlotId)
+  scheduleBasketSync()
   activeTab.value = 'shop'
   showCheckout.value = true
 }
@@ -462,7 +516,10 @@ watch(activeTab, (tab) => {
   }
 })
 
-onUnmounted(stopLinkPoll)
+onUnmounted(() => {
+  stopLinkPoll()
+  stopBasketSync()
+})
 
 async function loadShop() {
   loading.value = true
@@ -692,6 +749,9 @@ const tabClass = (on: boolean) =>
           <span class="font-bold">Estimated total</span>
           <strong class="text-xl text-farm-green">{{ formatShopPrice(cartTotalKobo) }}</strong>
         </div>
+        <p v-if="account && cartLines.length" class="mt-3 text-xs leading-5 text-slate-500">
+          Saved to your account so your linked WhatsApp or Telegram bot can see it.
+        </p>
         <button type="button" class="mt-5 w-full rounded-xl bg-farm-green py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="!cartCount" @click="beginCheckout">Continue to checkout</button>
         <div class="mt-5 border-t border-slate-800 pt-5">
           <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Or continue with a chat assistant</p>

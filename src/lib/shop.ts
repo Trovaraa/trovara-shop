@@ -51,6 +51,12 @@ export type ShopRecurringOrder = {
   createdAt?: string
 }
 
+export type ShopDraftBasket = {
+  items: { productId: string; quantity: number }[]
+  familyBasketActive: boolean
+  updatedAt: string | null
+}
+
 export type ShopOrder = {
   id: string
   reference: string
@@ -181,6 +187,12 @@ export const shopApi = {
   me: () => request<{ account: ShopAccount; channels: { channel: string; name: string | null }[] }>('/me'),
   orders: () => request<{ orders: ShopOrder[] }>('/orders'),
   recurringOrders: () => request<{ recurringOrders: ShopRecurringOrder[] }>('/recurring-orders'),
+  basket: () => request<{ basket: ShopDraftBasket }>('/basket'),
+  saveBasket: (body: Pick<ShopDraftBasket, 'items' | 'familyBasketActive'>) =>
+    request<{ basket: ShopDraftBasket }>('/basket', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
   cancelRecurringOrder: (id: string) =>
     request<{ ok: boolean }>(`/recurring-orders/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   linkCode: () =>

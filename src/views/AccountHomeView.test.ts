@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { shopApi } from '@/lib/shop'
 import AccountHomeView from './AccountHomeView.vue'
 
 vi.mock('@/lib/shop', () => {
@@ -68,6 +69,12 @@ vi.mock('@/lib/shop', () => {
         code: 'ABC123',
         expiresAt: '2099-01-01T12:00:00.000Z',
       }),
+      basket: vi.fn().mockResolvedValue({
+        basket: { items: [], familyBasketActive: false, updatedAt: null },
+      }),
+      saveBasket: vi.fn().mockResolvedValue({
+        basket: { items: [], familyBasketActive: false, updatedAt: null },
+      }),
       credits: vi.fn().mockResolvedValue({
         credits: {
           balance: 0,
@@ -126,6 +133,30 @@ describe('AccountHomeView credit status', () => {
     expect(wrapper.text()).toContain('2 kg included in your Family Basket and cannot be removed.')
     expect(wrapper.text()).toContain('1 kg included in your Family Basket and cannot be removed.')
     expect(wrapper.text()).toContain('Standard Family Basket item')
+    expect(wrapper.text()).toContain(
+      'Saved to your account so your linked WhatsApp or Telegram bot can see it.',
+    )
+  })
+
+  it('restores an unfinished account basket from Trovara OS', async () => {
+    vi.mocked(shopApi.basket).mockResolvedValueOnce({
+      basket: {
+        items: [{ productId: 'plantain-1', quantity: 3 }],
+        familyBasketActive: false,
+        updatedAt: '2026-08-21T12:00:00.000Z',
+      },
+    })
+
+    const wrapper = mount(AccountHomeView)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('3 items')
+    expect(wrapper.text()).toContain('3 × kg')
+    expect(wrapper.text()).toContain(
+      'Saved to your account so your linked WhatsApp or Telegram bot can see it.',
+    )
+
+    wrapper.unmount()
   })
 
   it('links the shop account through Telegram or the live WhatsApp bot', async () => {
