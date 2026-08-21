@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import HiringBanner from '@/components/HiringBanner.vue'
+import ShopFooter from '@/components/ShopFooter.vue'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 import TrovaraLogo from '@/components/TrovaraLogo.vue'
 </script>
@@ -14,8 +16,10 @@ import TrovaraLogo from '@/components/TrovaraLogo.vue'
         <ThemeSwitcher compact />
       </div>
     </header>
+    <HiringBanner />
     <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <RouterView />
     </main>
+    <ShopFooter />
   </div>
 </template>
