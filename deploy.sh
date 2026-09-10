@@ -163,6 +163,9 @@ REMOTE
 $SCP -q "$REMOTE_RUNNER" "$VM_HOST:/tmp/trovara-shop-deploy-remote.sh"
 $SSH -t "$VM_HOST" 'bash /tmp/trovara-shop-deploy-remote.sh; rc=$?; rm -f /tmp/trovara-shop-deploy-remote.sh; exit $rc'
 
+echo "==> Verifying live security headers"
+bash "$SCRIPT_DIR/scripts/verify-live-security-headers.sh"
+
 echo ""
 echo "==> Done. Live at https://shop.trovara.farm"
 echo "    (Hard-refresh if the browser shows an old build.)"

@@ -27,6 +27,11 @@ Second CloudPanel site on the same VPS as OS:
 - nginx: [`docs/nginx-shop.trovara.farm.conf.example`](./docs/nginx-shop.trovara.farm.conf.example)
 - Deploy: `./deploy.sh` (this repo only — do not run from `trovara-os`)
 
+Install the nginx policy from that template and reload nginx before the next
+shop release. `deploy.sh` now verifies the public CSP, Permissions Policy,
+HSTS, MIME-sniffing, and referrer headers after release; it intentionally fails
+if server configuration has drifted.
+
 OS production `.env` still needs `PUBLIC_SHOP_URL=https://shop.trovara.farm` and
 `https://shop.trovara.farm` in `CORS_ORIGIN` so verify/reset/order emails and
 cookies work. That API config is not this frontend.
