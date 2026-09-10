@@ -52,11 +52,11 @@ server {
   ssl_session_cache shared:SSL:10m;
 
   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Frame-Options "DENY" always;
   add_header X-Content-Type-Options "nosniff" always;
   add_header Referrer-Policy "strict-origin-when-cross-origin" always;
   add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
-  add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://trovara.farm https://www.trovara.farm; media-src 'self'; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'" always;
+  add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://trovara.farm https://www.trovara.farm; media-src 'self'; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'" always;
 
   client_max_body_size 2m;
 
@@ -79,6 +79,9 @@ server {
     add_header Pragma "no-cache" always;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://trovara.farm https://www.trovara.farm; media-src 'self'; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'" always;
     add_header X-Request-ID $request_id always;
     proxy_read_timeout 120s;
     proxy_send_timeout 120s;
@@ -118,6 +121,9 @@ server {
     add_header Pragma "no-cache" always;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://trovara.farm https://www.trovara.farm; media-src 'self'; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'" always;
     add_header X-Request-ID $request_id always;
     proxy_read_timeout 120s;
     proxy_send_timeout 120s;
