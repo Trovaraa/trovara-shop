@@ -7,11 +7,7 @@ title = "trovara-shop"
 useDefault = true
 
 [allowlist]
-description = "False positives: theme localStorage key, docs placeholders, test fixtures"
-paths = [
-  '''(^|/)docs/''',
-  '''\.test\.ts$''',
-]
+description = "Known non-secret theme namespace; scan documentation and tests"
 regexes = [
-  '''trovara_shop_theme''',
+  '''^trovara_shop_theme$''',
 ]
