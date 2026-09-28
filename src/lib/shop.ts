@@ -246,9 +246,8 @@ export function isAllowedPaystackCheckoutUrl(value: string | undefined): boolean
   if (!value) return false
   try {
     const parsed = new URL(value)
-    if (parsed.protocol !== 'https:') return false
-    const host = parsed.hostname.toLowerCase()
-    return host === 'checkout.paystack.com' || host.endsWith('.paystack.com')
+    // Keep aligned with the OS API: only the documented hosted checkout origin.
+    return parsed.origin === 'https://checkout.paystack.com' && !parsed.username && !parsed.password
   } catch {
     return false
   }
