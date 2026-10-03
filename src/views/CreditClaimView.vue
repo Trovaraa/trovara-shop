@@ -105,11 +105,11 @@ onMounted(async () => {
         <form class="mt-6 grid gap-4" @submit.prevent="claim">
           <label class="text-sm font-bold text-os-fg">
             Create password
-            <input v-model="form.password" required type="password" minlength="8" maxlength="128" autocomplete="new-password" class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-none focus:border-farm-green" />
+            <input v-model="form.password" required type="password" minlength="8" maxlength="128" autocomplete="new-password" class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-hidden focus:border-farm-green" />
           </label>
           <label class="text-sm font-bold text-os-fg">
             Confirm password
-            <input v-model="form.confirmPassword" required type="password" minlength="8" maxlength="128" autocomplete="new-password" class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-none focus:border-farm-green" />
+            <input v-model="form.confirmPassword" required type="password" minlength="8" maxlength="128" autocomplete="new-password" class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-hidden focus:border-farm-green" />
           </label>
           <button type="submit" class="min-h-12 rounded-xl bg-farm-green px-5 font-bold text-white disabled:opacity-60" :disabled="busy">
             {{ busy ? 'Activating…' : 'Activate account and claim 2,000 Trovara Credits' }}

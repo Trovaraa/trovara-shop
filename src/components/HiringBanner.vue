@@ -6,7 +6,7 @@ import { TROVARA_CAREERS_URL } from '@/lib/public-links'
   <aside class="hiring-banner overflow-hidden bg-farm-gold text-slate-950" aria-label="Trovara Farm careers">
     <a
       :href="TROVARA_CAREERS_URL"
-      class="group block min-h-11 py-3 font-black uppercase tracking-[0.16em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-slate-950"
+      class="group block min-h-11 py-3 font-black uppercase tracking-[0.16em] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-slate-950"
     >
       <span class="hiring-banner-track flex w-max items-center whitespace-nowrap text-xs sm:text-sm">
         <span class="flex items-center gap-5 px-5">

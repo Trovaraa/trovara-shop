@@ -557,7 +557,7 @@ async function loadShop() {
 onMounted(loadShop)
 
 const fieldClass =
-  'mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-none focus:border-farm-green'
+  'mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-hidden focus:border-farm-green'
 const cardClass = 'rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl'
 const tabClass = (on: boolean) =>
   on
@@ -976,7 +976,7 @@ const tabClass = (on: boolean) =>
       </h2>
       <p class="mt-3 leading-7 text-slate-400">
         Website orders only appear in chat after you link. Create a code, open the Trovara customer bot on Telegram or WhatsApp, and send
-        <code class="rounded bg-slate-800 px-1.5 py-0.5 text-sm font-semibold text-os-fg">link YOURCODE</code>.
+        <code class="rounded-sm bg-slate-800 px-1.5 py-0.5 text-sm font-semibold text-os-fg">link YOURCODE</code>.
       </p>
       <div v-if="account" :class="cardClass" class="mt-6">
         <div v-if="hasLinkedChannels" class="rounded-2xl border border-farm-green/30 bg-farm-green/10 p-5" role="status">
@@ -1080,7 +1080,7 @@ const tabClass = (on: boolean) =>
       </template>
     </section>
 
-    <div v-if="showCheckout" class="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/70 p-4" @click.self="showCheckout = false">
+    <div v-if="showCheckout" class="fixed inset-0 z-80 grid place-items-center overflow-y-auto bg-black/70 p-4" @click.self="showCheckout = false">
       <form class="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl sm:p-8" @submit.prevent="placeOrder">
         <div class="flex items-start justify-between gap-4">
           <div>

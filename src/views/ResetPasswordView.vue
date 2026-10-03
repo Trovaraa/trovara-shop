@@ -59,7 +59,7 @@ onMounted(() => {
             type="password"
             minlength="8"
             autocomplete="new-password"
-            class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-none focus:border-farm-green"
+            class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-hidden focus:border-farm-green"
           />
         </label>
         <label class="text-sm font-bold text-os-fg">
@@ -70,7 +70,7 @@ onMounted(() => {
             type="password"
             minlength="8"
             autocomplete="new-password"
-            class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-none focus:border-farm-green"
+            class="mt-2 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 font-normal text-white outline-hidden focus:border-farm-green"
           />
         </label>
         <button type="submit" class="rounded-xl bg-farm-green py-3 text-sm font-bold text-white" :disabled="busy">
