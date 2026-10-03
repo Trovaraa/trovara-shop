@@ -7,7 +7,7 @@ import TrovaraLogo from '@/components/TrovaraLogo.vue'
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-[#07140f] to-farm-green-dark/20">
+  <div class="min-h-screen bg-linear-to-br from-slate-950 via-[#07140f] to-farm-green-dark/20">
     <header class="border-b border-slate-800 bg-[#10221a]/95">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <RouterLink to="/" class="min-h-11">

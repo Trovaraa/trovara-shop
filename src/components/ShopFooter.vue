@@ -24,7 +24,7 @@ import {
             :href="social.href"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex min-h-11 items-center rounded-full border border-slate-700 px-4 py-2 text-sm font-bold text-os-fg transition-colors hover:border-farm-green hover:bg-farm-green/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-farm-green"
+            class="inline-flex min-h-11 items-center rounded-full border border-slate-700 px-4 py-2 text-sm font-bold text-os-fg transition-colors hover:border-farm-green hover:bg-farm-green/10 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-farm-green"
           >
             {{ social.label }}
           </a>
@@ -35,7 +35,7 @@ import {
         <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-gold">Grow with Trovara</p>
         <a
           :href="TROVARA_CAREERS_URL"
-          class="mt-3 inline-flex min-h-11 items-center rounded-xl bg-farm-green px-5 py-3 text-sm font-black text-white hover:bg-farm-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-farm-green"
+          class="mt-3 inline-flex min-h-11 items-center rounded-xl bg-farm-green px-5 py-3 text-sm font-black text-white hover:bg-farm-green-dark focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-farm-green"
         >
           View open roles <span class="ml-2" aria-hidden="true">→</span>
         </a>
