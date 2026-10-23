@@ -13,10 +13,11 @@ const atLeast = (version, minimum) => {
 }
 
 test('Node2Shell runtime floor is pinned for builds and CI', () => {
-  assert.equal(readFileSync(new URL('.nvmrc', root), 'utf8').trim(), '22.23.4')
-  assert.equal(JSON.parse(readFileSync(new URL('package.json', root), 'utf8')).engines.node, '>=22.23.4 <23')
-  assert.equal(process.versions.node.split('.')[0], '22')
-  assert.ok(atLeast(process.versions.node, '22.23.4'), 'Use patched Node from .nvmrc')
+  assert.equal(readFileSync(new URL('.nvmrc', root), 'utf8').trim(), '24.22.1')
+  assert.equal(JSON.parse(readFileSync(new URL('package.json', root), 'utf8')).engines.node, '>=24.22.1 <25')
+  assert.equal(lock.packages[''].engines.node, '>=24.22.1 <25')
+  assert.equal(process.versions.node.split('.')[0], '24')
+  assert.ok(atLeast(process.versions.node, '24.22.1'), 'Use patched Node from .nvmrc')
 })
 
 test('Vite and Vitest mocker include October security fixes in every installed copy', () => {
