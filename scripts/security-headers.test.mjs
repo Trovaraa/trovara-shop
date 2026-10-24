@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { readFileSync } from 'node:fs'
 import { validateSecurityHeaders } from './security-headers.mjs'
 
 const policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'"
@@ -19,4 +20,15 @@ test('rejects missing CSP', () => {
 })
 test('rejects policies allowing arbitrary external scripts', () => {
   assert.throws(() => validateSecurityHeaders(headers.replace("script-src 'self'", "script-src *")), /Expected script-src/)
+})
+
+test('nginx indexes only public landing URLs and preserves noindex before JS', () => {
+  const config = readFileSync(new URL('../docs/nginx-shop.trovara.farm.conf.example', import.meta.url), 'utf8')
+  const map = config.match(/map \$request_uri \$trovara_shop_robots \{([\s\S]*?)\}/)?.[1]
+  assert.ok(map)
+  assert.match(map, /default "noindex, nofollow";/)
+  assert.deepEqual([...map.matchAll(/"([^"]+)" "index, follow";/g)].map((match) => match[1]), ['/', '/shop', '/shop/'])
+  assert.equal((config.match(/add_header X-Robots-Tag \$trovara_shop_robots always;/g) ?? []).length, 3)
+  const sitemap = readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8')
+  assert.deepEqual([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]), ['https://shop.trovara.farm/'])
 })

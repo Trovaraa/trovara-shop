@@ -17,6 +17,7 @@ import { buildWhatsAppLink } from '@/lib/whatsapp'
 import { TELEGRAM_ORDER_URL } from '@/lib/telegram'
 import ShopHeroArt from '@/components/ShopHeroArt.vue'
 import { FARM_PRODUCTS_URL, productImage } from '@/lib/farm'
+import { applyShopIndexing } from '@/lib/indexing'
 
 type Tab = 'shop' | 'credits' | 'orders' | 'connect'
 type AuthMode = 'login' | 'register' | 'forgot'
@@ -32,6 +33,9 @@ const sessionWarning = ref('')
 const activeTab = ref<Tab>('shop')
 const authMode = ref<AuthMode>('register')
 const account = ref<ShopAccount | null>(null)
+watch(account, (value) => {
+  applyShopIndexing(window.location.pathname, Boolean(window.location.search), Boolean(value))
+}, { immediate: true, flush: 'post' })
 const products = ref<ShopProduct[]>([])
 const deliverySlots = ref<ShopDeliverySlot[]>([])
 const orders = ref<ShopOrder[]>([])

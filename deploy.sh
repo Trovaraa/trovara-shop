@@ -26,7 +26,7 @@ if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
 fi
 # shellcheck disable=SC1091
 source "$NVM_DIR/nvm.sh"
-nvm use 22 >/dev/null
+nvm use "$(cat "$SCRIPT_DIR/.nvmrc")" >/dev/null
 
 if [[ -f "$SCRIPT_DIR/.env.deploy" ]]; then
   # shellcheck disable=SC1091
@@ -137,7 +137,7 @@ if [[ ! -s "\$NVM_DIR/nvm.sh" ]]; then
 fi
 # shellcheck disable=SC1091
 source "\$NVM_DIR/nvm.sh"
-nvm use 22
+nvm use "\$(cat .nvmrc)"
 echo "==> [vm] node \$(node -v), npm \$(npm -v)"
 
 echo "==> [vm] npm ci"

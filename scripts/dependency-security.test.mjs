@@ -12,6 +12,22 @@ const atLeast = (version, minimum) => {
   return a[0] > b[0] || (a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && a[2] >= b[2])))
 }
 
+test('Node2Shell runtime floor is pinned for builds and CI', () => {
+  assert.equal(readFileSync(new URL('.nvmrc', root), 'utf8').trim(), '24.22.1')
+  assert.equal(JSON.parse(readFileSync(new URL('package.json', root), 'utf8')).engines.node, '>=24.22.1 <25')
+  assert.equal(lock.packages[''].engines.node, '>=24.22.1 <25')
+  assert.equal(process.versions.node.split('.')[0], '24')
+  assert.ok(atLeast(process.versions.node, '24.22.1'), 'Use patched Node from .nvmrc')
+})
+
+test('Vite and Vitest mocker include October security fixes in every installed copy', () => {
+  assert.ok(versions('vite').length > 0)
+  for (const version of versions('vite')) assert.ok(atLeast(version, '6.4.5'), version)
+  for (const name of ['vitest', '@vitest/mocker']) {
+    for (const version of versions(name)) assert.ok(atLeast(version, '4.1.12'), name + ' ' + version)
+  }
+})
+
 test('Tailwind v4 removes the unpatched braces dependency chain', () => {
   for (const name of ['braces', 'micromatch', 'fast-glob']) assert.deepEqual(versions(name), [], name)
   assert.ok(versions('tailwindcss').length > 0)
@@ -29,7 +45,12 @@ test('all nested brace-expansion resolutions include the DoS fixes', () => {
 })
 
 test('URI and IP parsers cannot regress to the vulnerable override versions', () => {
-  for (const version of versions('fast-uri')) assert.ok(atLeast(version, '3.1.8'), version)
+  for (const version of versions('fast-uri')) assert.ok(atLeast(version, '3.1.9'), version)
   for (const version of versions('ip-address')) assert.ok(atLeast(version, '10.7.2'), version)
+})
+
+test('Happy DOM includes the complete ESM alias injection fix', () => {
+  assert.ok(versions('happy-dom').length > 0)
+  for (const version of versions('happy-dom')) assert.ok(atLeast(version, '21.0.4'), version)
 })
 
