@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { applyShopIndexing } from '../lib/indexing'
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -53,6 +54,7 @@ const router = createRouter({
 router.afterEach((to) => {
   const title = typeof to.meta.title === 'string' ? to.meta.title : 'Trovara Farm Account'
   document.title = title
+  applyShopIndexing(to.path, Object.keys(to.query).length > 0)
 })
 
 export default router
