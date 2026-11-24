@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=24.22.1 <25"
+    "node": ">=24.22.3 <25"
   },
   "scripts": {
     "dev": "vite",
@@ -27,7 +27,7 @@
     "@vue/test-utils": "^2.6.0",
     "eslint": "^9.39.5",
     "eslint-plugin-vue": "^10.12.1",
-    "glob": "13.0.7",
+    "glob": "14.0.2",
     "globals": "^16.5.0",
     "happy-dom": "^21.0.4",
     "postcss": "^8.5.31",
@@ -41,6 +41,7 @@
   },
   "overrides": {
     "glob": "$glob",
-    "happy-dom": "$happy-dom"
+    "happy-dom": "$happy-dom",
+    "minimatch@>=7 <11": "11.0.1"
   }
 }
