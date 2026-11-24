@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=24.22.1 <25"
+    "node": ">=24.22.3 <25"
   },
   "scripts": {
     "dev": "vite",
@@ -17,30 +17,31 @@
     "audit": "npm audit --audit-level=high"
   },
   "dependencies": {
-    "vue": "^3.5.44",
-    "vue-router": "^4.5.1"
+    "vue": "^3.5.45",
+    "vue-router": "^4.6.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/postcss": "^4.3.5",
     "@vitejs/plugin-vue": "^5.2.4",
-    "@vue/test-utils": "^2.5.1",
+    "@vue/test-utils": "^2.6.0",
     "eslint": "^9.39.5",
-    "eslint-plugin-vue": "^10.11.1",
-    "glob": "13.0.6",
+    "eslint-plugin-vue": "^10.12.1",
+    "glob": "14.0.2",
     "globals": "^16.5.0",
     "happy-dom": "^21.0.4",
     "postcss": "^8.5.31",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.72.0",
-    "vite": "^6.4.5",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^6.4.6",
     "vitest": "^4.1.12",
-    "vue-eslint-parser": "^10.4.1",
+    "vue-eslint-parser": "^10.4.2",
     "vue-tsc": "^2.2.10"
   },
   "overrides": {
     "glob": "$glob",
-    "happy-dom": "$happy-dom"
+    "happy-dom": "$happy-dom",
+    "minimatch@>=7 <11": "11.0.1"
   }
 }
