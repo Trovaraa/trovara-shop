@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import {
   shopApi,
   ShopApiError,
@@ -210,6 +210,18 @@ function setAuthMode(mode: AuthMode) {
 
 function scrollToAccount() {
   document.getElementById('shop-account')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+async function viewProducts() {
+  activeTab.value = 'shop'
+  await nextTick()
+  document.getElementById(familyBasketProducts.value.length ? 'family-basket' : 'shop-products-heading')?.focus()
+}
+
+async function openSignIn() {
+  setAuthMode('login')
+  await nextTick()
+  document.getElementById('shop-account-heading')?.focus()
 }
 
 async function refreshChannels() {
@@ -573,25 +585,41 @@ const tabClass = (on: boolean) =>
   <div>
     <section class="mb-8 grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,420px)]">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.24em] text-farm-gold">Fresh this week</p>
-        <h1 class="mt-3 text-3xl font-black text-os-fg sm:text-5xl">Good food for the week.</h1>
-        <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
-          Build a Family Basket from Trovara Farm products and food supplied by trusted farmers.
+        <h1 class="text-3xl font-black text-os-fg sm:text-5xl">Trovara Shop</h1>
+        <p v-if="familyBasketProducts.length" class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+          See what comes in the Trovara Family Basket and add more of what your household needs.
+        </p>
+        <p v-else-if="!loading && products.length" class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+          Choose from our available products to build your own order.
+        </p>
+        <p v-else-if="!loading && !catalogWarning" class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+          See what we’re growing and join a waitlist for future harvests.
         </p>
         <div class="mt-6 flex flex-wrap gap-3">
           <button
+            v-if="!loading && products.length"
             type="button"
-            class="rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white hover:bg-farm-green-dark disabled:opacity-50"
-            :disabled="!familyBasketProducts.length"
-            @click="buildFamilyBasket"
+            class="rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white hover:bg-farm-green-dark"
+            @click="viewProducts"
           >
-            Build my Family Basket
+            {{ familyBasketProducts.length ? 'View the Family Basket' : 'Browse available products' }}
+          </button>
+          <a v-else-if="!loading" :href="FARM_PRODUCTS_URL" class="rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white hover:bg-farm-green-dark">
+            View products &amp; waitlists
+          </a>
+          <button
+            v-if="!loading && !account"
+            type="button"
+            class="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-os-fg hover:bg-slate-800"
+            @click="openSignIn"
+          >
+            Sign in
           </button>
           <button
+            v-else-if="latestOrder && products.length"
             type="button"
-            class="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-os-fg hover:bg-slate-800 disabled:opacity-50"
-            :disabled="!latestOrder"
-            @click="latestOrder && reorder(latestOrder)"
+            class="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-os-fg hover:bg-slate-800"
+            @click="reorder(latestOrder)"
           >
             Buy again
           </button>
@@ -652,13 +680,12 @@ const tabClass = (on: boolean) =>
       </button>
     </div>
 
-    <div v-if="loading" class="grid min-h-64 place-items-center text-slate-500">Loading your account…</div>
+    <div v-if="loading" class="grid min-h-64 place-items-center text-slate-500" role="status">Loading the shop…</div>
 
     <div v-else-if="activeTab === 'shop'" class="grid gap-8" :class="products.length ? 'lg:grid-cols-[minmax(0,1fr)_23rem]' : 'grid-cols-1'">
       <section id="shop-products">
         <div class="mb-6">
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">{{ products.length ? 'This week at Trovara' : 'Harvest catalogue' }}</p>
-          <h2 class="mt-2 text-2xl font-black text-os-fg">Farm shop</h2>
+          <h2 id="shop-products-heading" class="text-2xl font-black text-os-fg" tabindex="-1">{{ products.length ? 'Shop products' : 'Harvest catalogue' }}</h2>
         </div>
         <article
           v-if="familyBasketProducts.length"
@@ -666,8 +693,7 @@ const tabClass = (on: boolean) =>
         >
           <div class="flex flex-wrap items-start justify-between gap-5">
             <div>
-              <p class="text-xs font-black uppercase tracking-[0.2em] text-farm-green">Family Basket</p>
-              <h3 class="mt-2 text-xl font-black text-os-fg">Your weekly essentials, ready to customise</h3>
+              <h3 id="family-basket" class="text-xl font-black text-os-fg" tabindex="-1">Trovara Family Basket</h3>
               <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
                 The standard items stay in the basket. You can increase their quantities and add anything else below.
               </p>
@@ -680,7 +706,7 @@ const tabClass = (on: boolean) =>
             <div class="text-left sm:text-right">
               <p class="text-2xl font-black text-farm-green">{{ formatShopPrice(familyBasketPriceKobo) }}</p>
               <button type="button" class="mt-3 rounded-xl bg-farm-green px-5 py-3 text-sm font-bold text-white" @click="buildFamilyBasket">
-                {{ familyBasketActive ? 'Family Basket added' : 'Build my basket' }}
+                {{ familyBasketActive ? 'Family Basket added' : 'Build my Family Basket' }}
               </button>
             </div>
           </div>
@@ -718,9 +744,9 @@ const tabClass = (on: boolean) =>
           </article>
         </div>
         <div v-else :class="cardClass" class="text-center">
-          <p class="text-lg font-black text-os-fg">Checkout opens with each harvest</p>
+          <p class="text-lg font-black text-os-fg">{{ catalogWarning ? 'The live catalogue is temporarily unavailable' : 'No products are on sale right now' }}</p>
           <p class="mt-3 text-sm leading-6 text-slate-400">
-            Nothing is on sale yet. Join product waitlists, then create your account so orders and chat updates stay linked when supply starts.
+            View our product range and join a waitlist for updates on future harvests.
           </p>
           <a :href="FARM_PRODUCTS_URL" class="mt-6 inline-flex rounded-xl bg-farm-green px-6 py-3 text-sm font-bold text-white">View products & waitlists</a>
         </div>
@@ -747,7 +773,7 @@ const tabClass = (on: boolean) =>
           </div>
         </div>
         <p v-else class="mt-5 rounded-2xl bg-slate-950 p-5 text-sm leading-6 text-slate-500">
-          Add a product when SKUs are live. Your basket stays on this device until checkout.
+          Add a product to start your basket.
         </p>
         <div class="mt-5 flex justify-between border-t border-slate-800 pt-5">
           <span class="font-bold">Estimated total</span>
@@ -1051,7 +1077,7 @@ const tabClass = (on: boolean) =>
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="text-xs font-black uppercase tracking-wider text-farm-green">Customer account</p>
-            <h2 class="mt-1 text-2xl font-black text-os-fg">{{ authMode === 'login' ? 'Welcome back' : 'Create your account' }}</h2>
+            <h2 id="shop-account-heading" class="mt-1 text-2xl font-black text-os-fg" tabindex="-1">{{ authMode === 'login' ? 'Sign in to Trovara Shop' : 'Create your account' }}</h2>
           </div>
           <button type="button" class="text-sm font-bold text-farm-green" @click="setAuthMode(authMode === 'login' ? 'register' : 'login')">
             {{ authMode === 'login' ? 'Create account' : 'I have an account' }}
