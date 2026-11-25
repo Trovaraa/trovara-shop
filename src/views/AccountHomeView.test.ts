@@ -94,7 +94,40 @@ vi.mock('@/lib/shop', () => {
   }
 })
 
-describe('AccountHomeView credit status', () => {
+describe('Shop landing', () => {
+  it('lets a guest view the standard basket before adding it and sign in inside Shop', async () => {
+    vi.mocked(shopApi.session).mockResolvedValueOnce({ csrfToken: 'test-csrf', account: null })
+    const wrapper = mount(AccountHomeView, { attachTo: document.body })
+    await flushPromises()
+
+    const findButton = (label: string) => wrapper.findAll('button').find((button) => button.text() === label)!
+    await findButton('My orders').trigger('click')
+    await findButton('View the Family Basket').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('#family-basket').text()).toBe('Trovara Family Basket')
+    expect(document.activeElement).toBe(wrapper.get('#family-basket').element)
+    expect(wrapper.text()).toContain('0 items')
+
+    await findButton('Sign in').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('#shop-account-heading').text()).toBe('Sign in to Trovara Shop')
+    expect(document.activeElement).toBe(wrapper.get('#shop-account-heading').element)
+    wrapper.unmount()
+  })
+
+  it('offers product forecasts and waitlists when the public shop has no saleable products', async () => {
+    vi.mocked(shopApi.session).mockResolvedValueOnce({ csrfToken: 'test-csrf', account: null })
+    vi.mocked(shopApi.catalog).mockResolvedValueOnce({ farm: { name: 'Trovara Farm' }, deliverySlots: [], products: [] })
+    const wrapper = mount(AccountHomeView)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('No products are on sale right now')
+    expect(wrapper.text()).not.toContain('View the Family Basket')
+    expect(wrapper.get('section a').text()).toBe('View products & waitlists')
+    wrapper.unmount()
+  })
+
   it('makes a legacy account zero balance and missing welcome award explicit', async () => {
     const wrapper = mount(AccountHomeView)
     await flushPromises()

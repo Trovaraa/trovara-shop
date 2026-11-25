@@ -6,11 +6,8 @@ defineProps<{ class?: string }>()
   <svg
     :class="$props.class"
     viewBox="0 0 520 420"
-    role="img"
-    aria-labelledby="shop-hero-title shop-hero-desc"
+    aria-hidden="true"
   >
-    <title id="shop-hero-title">Trovara Farm Account</title>
-    <desc id="shop-hero-desc">Shopping bags and a harvest crate for customer orders.</desc>
     <defs>
       <radialGradient id="shopGlow" cx="70%" cy="40%" r="55%">
         <stop offset="0%" stop-color="#2d9960" stop-opacity=".28" />

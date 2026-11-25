@@ -12,7 +12,7 @@ import {
     <div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
       <div>
         <a :href="TROVARA_WEBSITE_URL" class="inline-flex min-h-11 items-center" aria-label="Visit Trovara Farm">
-          <TrovaraLogo />
+          <TrovaraLogo descriptor="" />
         </a>
         <p class="mt-3 max-w-md text-sm leading-6 text-slate-400">
           Follow the farm for harvest updates, food stories, and new product announcements.

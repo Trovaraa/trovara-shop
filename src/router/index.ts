@@ -6,25 +6,25 @@ export const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'home',
     component: () => import('../views/AccountHomeView.vue'),
-    meta: { title: 'Trovara Farm Account' },
+    meta: { title: 'Trovara Shop' },
   },
   {
     path: '/verify-email',
     name: 'verify-email',
     component: () => import('../views/VerifyEmailView.vue'),
-    meta: { title: 'Verify email - Trovara Farm Account' },
+    meta: { title: 'Verify email - Trovara Shop' },
   },
   {
     path: '/reset-password',
     name: 'reset-password',
     component: () => import('../views/ResetPasswordView.vue'),
-    meta: { title: 'Reset password - Trovara Farm Account' },
+    meta: { title: 'Reset password - Trovara Shop' },
   },
   {
     path: '/credits/claim',
     name: 'claim-credits',
     component: () => import('../views/CreditClaimView.vue'),
-    meta: { title: 'Claim Trovara Credits - Trovara Farm' },
+    meta: { title: 'Claim Trovara Credits - Trovara Shop' },
   },
   { path: '/shop', redirect: (to) => ({ path: '/', query: to.query, hash: to.hash }) },
   {
@@ -52,7 +52,7 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
-  const title = typeof to.meta.title === 'string' ? to.meta.title : 'Trovara Farm Account'
+  const title = typeof to.meta.title === 'string' ? to.meta.title : 'Trovara Shop'
   document.title = title
   applyShopIndexing(to.path, Object.keys(to.query).length > 0)
 })
