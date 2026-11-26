@@ -31,14 +31,25 @@ export type ShopDeliverySlot = {
   startTime: string
   endTime: string
   cutoffHours: number
+  nextDeliveryDate?: string | null
+  nextOrderCutoffAt?: string | null
   active?: boolean
   sortOrder?: number
+}
+
+export type ShopCatalog = {
+  products: ShopProduct[]
+  deliverySlots: ShopDeliverySlot[]
+  deliveryTimeZone?: 'Africa/Lagos'
+  familyBasketAvailable?: boolean
+  farm: { name: string }
 }
 
 export type ShopRecurringOrder = {
   id: string
   frequency: 'weekly' | 'fortnightly' | 'monthly'
   items: { productId: string; quantity: number }[]
+  familyBasketActive?: boolean
   deliverySlotId: string | null
   deliveryLabel: string | null
   deliveryDayOfWeek: number | null
@@ -114,13 +125,15 @@ export class ShopApiError extends Error {
   status: number
   needsVerification: boolean
   needsSignIn: boolean
+  code?: string
 
-  constructor(message: string, status: number, needsVerification = false, needsSignIn = false) {
+  constructor(message: string, status: number, needsVerification = false, needsSignIn = false, code?: string) {
     super(message)
     this.name = 'ShopApiError'
     this.status = status
     this.needsVerification = needsVerification
     this.needsSignIn = needsSignIn
+    this.code = code
   }
 }
 
@@ -144,6 +157,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   const data = (await response.json().catch(() => ({}))) as T & {
     error?: string
+    code?: string
     csrfToken?: string
     needsVerification?: boolean
     needsSignIn?: boolean
@@ -160,6 +174,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       response.status,
       data.needsVerification === true,
       data.needsSignIn === true,
+      typeof data.code === 'string' ? data.code : undefined,
     )
   }
   return data
@@ -167,12 +182,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const shopApi = {
   session: () => request<{ csrfToken: string; account: ShopAccount | null }>('/session'),
-  catalog: () =>
-    request<{
-      products: ShopProduct[]
-      deliverySlots: ShopDeliverySlot[]
-      farm: { name: string }
-    }>('/catalog'),
+  catalog: () => request<ShopCatalog>('/catalog', { cache: 'no-store' }),
   register: (body: { name: string; email: string; phone?: string; password: string }) =>
     request<{ message: string }>('/register', {
       method: 'POST',
@@ -199,6 +209,7 @@ export const shopApi = {
     request<{ code: string; expiresAt: string; instruction: string }>('/link-code', { method: 'POST' }),
   placeOrder: (body: {
     items: { productId: string; quantity: number }[]
+    familyBasketActive: boolean
     address: string
     phone?: string
     deliverySlotId?: string

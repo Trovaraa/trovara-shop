@@ -6,6 +6,7 @@ import {
   formatShopPrice,
   isAllowedPaystackCheckoutUrl,
   type ShopAccount,
+  type ShopCatalog,
   type ShopOrder,
   type ShopProduct,
   type ShopCredits,
@@ -13,6 +14,7 @@ import {
   type ShopDraftBasket,
   type ShopRecurringOrder,
 } from '@/lib/shop'
+import { bookableDeliverySlots, formatDeliveryDate, formatDeliveryHours } from '@/lib/shop-delivery'
 import { buildWhatsAppLink } from '@/lib/whatsapp'
 import { TELEGRAM_ORDER_URL } from '@/lib/telegram'
 import ShopHeroArt from '@/components/ShopHeroArt.vue'
@@ -30,6 +32,9 @@ const authError = ref('')
 const authNotice = ref('')
 const catalogWarning = ref('')
 const sessionWarning = ref('')
+const checkoutError = ref('')
+const checkoutNeedsRefresh = ref(false)
+const refreshingCatalog = ref(false)
 const activeTab = ref<Tab>('shop')
 const authMode = ref<AuthMode>('register')
 const account = ref<ShopAccount | null>(null)
@@ -38,6 +43,9 @@ watch(account, (value) => {
 }, { immediate: true, flush: 'post' })
 const products = ref<ShopProduct[]>([])
 const deliverySlots = ref<ShopDeliverySlot[]>([])
+const deliveryTimeZone = ref<ShopCatalog['deliveryTimeZone']>()
+const deliveryClock = ref(Date.now())
+const familyBasketAvailable = ref<ShopCatalog['familyBasketAvailable']>()
 const orders = ref<ShopOrder[]>([])
 const recurringOrders = ref<ShopRecurringOrder[]>([])
 const credits = ref<ShopCredits | null>(null)
@@ -76,7 +84,15 @@ const cartTotalKobo = computed(() =>
   cartLines.value.reduce((sum, line) => sum + line.product.priceKobo * line.quantity, 0),
 )
 const familyBasketProducts = computed(() =>
-  products.value.filter((product) => product.familyBasketQuantity > 0),
+  familyBasketAvailable.value === false
+    ? []
+    : products.value.filter((product) => product.familyBasketQuantity > 0),
+)
+const familyBasketNeedsReview = computed(() =>
+  familyBasketActive.value && (
+    !familyBasketProducts.value.length ||
+    familyBasketProducts.value.some((product) => (cart[product.id] ?? 0) < product.familyBasketQuantity)
+  ),
 )
 const familyBasketPriceKobo = computed(() =>
   familyBasketProducts.value.reduce(
@@ -85,9 +101,23 @@ const familyBasketPriceKobo = computed(() =>
   ),
 )
 const latestOrder = computed(() => orders.value[0] ?? null)
+const scheduledDeliverySlots = computed(() =>
+  deliveryTimeZone.value ? bookableDeliverySlots(deliverySlots.value, deliveryClock.value) : [],
+)
+const checkoutDeliverySlots = computed(() =>
+  deliveryTimeZone.value ? scheduledDeliverySlots.value : deliverySlots.value,
+)
+const checkoutDeliverySlot = computed(() =>
+  checkoutDeliverySlots.value.find((slot) => slot.id === checkoutForm.deliverySlotId),
+)
+const checkoutWindowMissing = computed(() =>
+  Boolean(deliveryTimeZone.value && deliverySlots.value.length && !checkoutDeliverySlot.value),
+)
+const nextScheduledDelivery = computed(() => scheduledDeliverySlots.value[0])
 
 let linkPollTimer: ReturnType<typeof setInterval> | null = null
 let basketSyncTimer: ReturnType<typeof setTimeout> | null = null
+let deliveryClockTimer: ReturnType<typeof setInterval> | null = null
 
 function stopLinkPoll() {
   if (linkPollTimer) {
@@ -149,6 +179,7 @@ function setQuantity(productId: string, quantity: number) {
 }
 
 function buildFamilyBasket() {
+  if (!familyBasketProducts.value.length) return
   familyBasketActive.value = true
   for (const product of familyBasketProducts.value) {
     cart[product.id] = Math.max(cart[product.id] ?? 0, product.familyBasketQuantity)
@@ -157,9 +188,18 @@ function buildFamilyBasket() {
   document.getElementById('shop-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+function keepIndividualProducts() {
+  familyBasketActive.value = false
+  checkoutForm.recurringOrderId = ''
+  checkoutForm.recurrenceFrequency = ''
+  scheduleBasketSync()
+}
+
 function clearBasket(sync = true) {
   for (const key of Object.keys(cart)) delete cart[key]
   familyBasketActive.value = false
+  checkoutForm.recurringOrderId = ''
+  checkoutForm.recurrenceFrequency = ''
   if (sync) scheduleBasketSync()
 }
 
@@ -170,8 +210,7 @@ function dateInputValue(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function nextDeliveryDate(slot: ShopDeliverySlot | undefined) {
-  if (!slot) return ''
+function legacyNextDeliveryDate(slot: ShopDeliverySlot) {
   const now = new Date()
   const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
   const daysAhead = (slot.dayOfWeek - candidate.getUTCDay() + 7) % 7
@@ -185,10 +224,52 @@ function nextDeliveryDate(slot: ShopDeliverySlot | undefined) {
 }
 
 function selectDeliverySlot(slotId: string) {
-  checkoutForm.deliverySlotId = slotId
-  checkoutForm.deliveryDate = nextDeliveryDate(
-    deliverySlots.value.find((slot) => slot.id === slotId),
-  )
+  const slot = checkoutDeliverySlots.value.find((candidate) => candidate.id === slotId)
+  checkoutForm.deliverySlotId = slot?.id ?? ''
+  checkoutForm.deliveryDate = !slot ? '' : deliveryTimeZone.value
+    ? slot.nextDeliveryDate ?? ''
+    : legacyNextDeliveryDate(slot)
+}
+
+function prepareDeliverySelection(preferredId = checkoutForm.deliverySlotId) {
+  deliveryClock.value = Date.now()
+  const slot = checkoutDeliverySlots.value.find((candidate) => candidate.id === preferredId)
+    ?? checkoutDeliverySlots.value[0]
+  if (
+    slot?.id === checkoutForm.deliverySlotId &&
+    checkoutForm.deliveryDate &&
+    (!slot.nextDeliveryDate || checkoutForm.deliveryDate >= slot.nextDeliveryDate)
+  ) return
+  selectDeliverySlot(slot?.id ?? '')
+}
+
+function setCatalog(catalog: ShopCatalog) {
+  products.value = catalog.products ?? []
+  deliverySlots.value = catalog.deliverySlots ?? []
+  deliveryTimeZone.value = catalog.deliveryTimeZone === 'Africa/Lagos' ? catalog.deliveryTimeZone : undefined
+  familyBasketAvailable.value = catalog.familyBasketAvailable
+  deliveryClock.value = Date.now()
+}
+
+async function refreshCatalog() {
+  refreshingCatalog.value = true
+  try {
+    setCatalog(await shopApi.catalog())
+    clearMessages()
+    prepareDeliverySelection()
+    if (familyBasketNeedsReview.value && showCheckout.value) {
+      showCheckout.value = false
+      activeTab.value = 'shop'
+      await nextTick()
+      document.getElementById('family-basket-review')?.focus()
+    }
+  } catch {
+    const message = 'We could not update the shop right now. Your basket is still here. Please try again.'
+    if (showCheckout.value) checkoutError.value = message
+    else error.value = message
+  } finally {
+    refreshingCatalog.value = false
+  }
 }
 
 function clearMessages() {
@@ -196,6 +277,8 @@ function clearMessages() {
   notice.value = ''
   authError.value = ''
   authNotice.value = ''
+  checkoutError.value = ''
+  checkoutNeedsRefresh.value = false
 }
 
 function clearAuthMessages() {
@@ -338,7 +421,7 @@ async function logout() {
 
 function beginCheckout() {
   clearMessages()
-  if (!cartCount.value) return
+  if (!cartCount.value || familyBasketNeedsReview.value) return
   if (!account.value) {
     authMode.value = 'login'
     authError.value = 'Create an account or sign in before checkout so your order can be tracked.'
@@ -347,10 +430,7 @@ function beginCheckout() {
     return
   }
   checkoutForm.phone = checkoutForm.phone || account.value.phone || ''
-  checkoutForm.recurringOrderId = ''
-  if (deliverySlots.value.length && !checkoutForm.deliverySlotId) {
-    selectDeliverySlot(deliverySlots.value[0].id)
-  }
+  prepareDeliverySelection()
   showCheckout.value = true
 }
 
@@ -379,14 +459,15 @@ function reviewRecurring(plan: ShopRecurringOrder) {
       cart[item.productId] = item.quantity
     }
   }
+  familyBasketActive.value = plan.familyBasketActive === true
   checkoutForm.address = plan.address
   checkoutForm.phone = plan.phone || account.value?.phone || ''
   checkoutForm.recurrenceFrequency = plan.frequency
   checkoutForm.recurringOrderId = plan.id
-  if (plan.deliverySlotId) selectDeliverySlot(plan.deliverySlotId)
+  prepareDeliverySelection(plan.deliverySlotId ?? '')
   scheduleBasketSync()
   activeTab.value = 'shop'
-  showCheckout.value = true
+  if (!familyBasketNeedsReview.value) showCheckout.value = true
 }
 
 async function stopRecurring(plan: ShopRecurringOrder) {
@@ -405,13 +486,23 @@ async function stopRecurring(plan: ShopRecurringOrder) {
 
 async function placeOrder() {
   clearMessages()
+  if (!cartCount.value || familyBasketNeedsReview.value) {
+    checkoutError.value = 'Review your basket before placing the order.'
+    return
+  }
+  deliveryClock.value = Date.now()
+  if (deliveryTimeZone.value && deliverySlots.value.length && (
+    !checkoutDeliverySlot.value ||
+    (checkoutDeliverySlot.value.nextDeliveryDate && checkoutForm.deliveryDate < checkoutDeliverySlot.value.nextDeliveryDate)
+  )) {
+    checkoutError.value = 'That delivery window has closed. Check delivery windows and choose again.'
+    checkoutNeedsRefresh.value = true
+    return
+  }
   busy.value = true
   try {
     const result = await shopApi.placeOrder({
-      items: cartLines.value.map((line) => ({
-        productId: line.product.id,
-        quantity: line.quantity,
-      })),
+      ...basketPayload(),
       address: checkoutForm.address,
       phone: checkoutForm.phone || undefined,
       deliverySlotId: checkoutForm.deliverySlotId || undefined,
@@ -432,7 +523,12 @@ async function placeOrder() {
       }
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Unable to place the order.'
+    checkoutError.value = err instanceof Error ? err.message : 'Unable to place the order.'
+    checkoutNeedsRefresh.value = err instanceof ShopApiError && (
+      err.code === 'family_basket_changed' ||
+      err.code === 'family_basket_unavailable' ||
+      err.code === 'delivery_window_changed'
+    )
   } finally {
     busy.value = false
   }
@@ -532,9 +628,15 @@ watch(activeTab, (tab) => {
   }
 })
 
+watch(deliveryTimeZone, (timeZone) => {
+  if (deliveryClockTimer) clearInterval(deliveryClockTimer)
+  deliveryClockTimer = timeZone ? setInterval(() => { deliveryClock.value = Date.now() }, 15_000) : null
+})
+
 onUnmounted(() => {
   stopLinkPoll()
   stopBasketSync()
+  if (deliveryClockTimer) clearInterval(deliveryClockTimer)
 })
 
 async function loadShop() {
@@ -547,11 +649,12 @@ async function loadShop() {
     shopApi.catalog(),
   ])
   if (catalogResult.status === 'fulfilled') {
-    products.value = catalogResult.value.products ?? []
-    deliverySlots.value = catalogResult.value.deliverySlots ?? []
+    setCatalog(catalogResult.value)
   } else {
     products.value = []
     deliverySlots.value = []
+    deliveryTimeZone.value = undefined
+    familyBasketAvailable.value = undefined
     catalogWarning.value = 'Live checkout is unavailable right now. Product forecasts and waitlists are still available.'
   }
   if (sessionResult.status === 'fulfilled') {
@@ -595,6 +698,30 @@ const tabClass = (on: boolean) =>
         <p v-else-if="!loading && !catalogWarning" class="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
           See what we’re growing and join a waitlist for future harvests.
         </p>
+        <div v-if="!loading && products.length && deliveryTimeZone" class="mt-4 text-sm leading-6 text-slate-400">
+          <template v-if="nextScheduledDelivery">
+            <p>
+              <span class="font-bold text-os-fg">Next scheduled delivery</span>
+              <span class="block sm:ml-2 sm:inline">
+                {{ formatDeliveryDate(nextScheduledDelivery.nextDeliveryDate) }} · {{ formatDeliveryHours(nextScheduledDelivery) }} WAT
+              </span>
+            </p>
+            <details v-if="scheduledDeliverySlots.length > 1" class="mt-1">
+              <summary class="cursor-pointer font-semibold text-farm-green">More delivery windows</summary>
+              <ul class="mt-2 space-y-1">
+                <li v-for="slot in scheduledDeliverySlots.slice(1)" :key="slot.id">
+                  {{ formatDeliveryDate(slot.nextDeliveryDate) }} · {{ formatDeliveryHours(slot) }} WAT
+                </li>
+              </ul>
+            </details>
+          </template>
+          <template v-else>
+            <p>No delivery dates are available right now.</p>
+            <button v-if="deliverySlots.length" type="button" class="min-h-11 font-bold text-farm-green underline" :disabled="refreshingCatalog" @click="refreshCatalog">
+              {{ refreshingCatalog ? 'Checking…' : 'Check delivery windows' }}
+            </button>
+          </template>
+        </div>
         <div class="mt-6 flex flex-wrap gap-3">
           <button
             v-if="!loading && products.length"
@@ -731,7 +858,13 @@ const tabClass = (on: boolean) =>
               </div>
               <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
                 <div class="inline-flex items-center rounded-xl border border-slate-700">
-                  <button type="button" class="h-11 w-11 text-xl" :aria-label="`Remove one ${product.name}`" @click="setQuantity(product.id, (cart[product.id] ?? 0) - 1)">−</button>
+                  <button
+                    type="button"
+                    class="h-11 w-11 text-xl disabled:opacity-40"
+                    :aria-label="`Remove one ${product.name}`"
+                    :disabled="(cart[product.id] ?? 0) <= minimumQuantity(product.id)"
+                    @click="setQuantity(product.id, (cart[product.id] ?? 0) - 1)"
+                  >−</button>
                   <span class="min-w-9 text-center font-black">{{ cart[product.id] ?? 0 }}</span>
                   <button type="button" class="h-11 w-11 text-xl" :aria-label="`Add one ${product.name}`" @click="setQuantity(product.id, (cart[product.id] ?? 0) + 1)">+</button>
                 </div>
@@ -782,7 +915,17 @@ const tabClass = (on: boolean) =>
         <p v-if="account && cartLines.length" class="mt-3 text-xs leading-5 text-slate-500">
           Saved to your account so your linked WhatsApp or Telegram bot can see it.
         </p>
-        <button type="button" class="mt-5 w-full rounded-xl bg-farm-green py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="!cartCount" @click="beginCheckout">Continue to checkout</button>
+        <div v-if="familyBasketNeedsReview" id="family-basket-review" tabindex="-1" class="mt-5 rounded-xl border border-farm-gold/35 bg-farm-gold/10 p-4 text-sm leading-6 text-os-fg">
+          <template v-if="familyBasketProducts.length">
+            <p>The standard Family Basket contents have changed. Check the new quantities before checkout.</p>
+            <button type="button" class="mt-2 min-h-11 font-bold text-farm-green underline" @click="buildFamilyBasket">Update Family Basket</button>
+          </template>
+          <template v-else>
+            <p>The Family Basket is temporarily unavailable. You can keep the individual products still available in your basket.</p>
+            <button type="button" class="mt-2 min-h-11 font-bold text-farm-green underline" @click="keepIndividualProducts">Keep individual products</button>
+          </template>
+        </div>
+        <button type="button" class="mt-5 w-full rounded-xl bg-farm-green py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="!cartCount || familyBasketNeedsReview" @click="beginCheckout">Continue to checkout</button>
         <div class="mt-5 border-t border-slate-800 pt-5">
           <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Or continue with a chat assistant</p>
           <div class="mt-3 grid gap-2" :class="TELEGRAM_ORDER_URL ? 'grid-cols-2' : 'grid-cols-1'">
@@ -939,7 +1082,7 @@ const tabClass = (on: boolean) =>
               class="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950 p-4 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <p class="font-black capitalize text-os-fg">{{ plan.frequency }} Family Basket</p>
+                <p class="font-black capitalize text-os-fg">{{ plan.frequency }} {{ plan.familyBasketActive ? 'Family Basket' : 'basket' }}</p>
                 <p class="mt-1 text-xs leading-5 text-slate-500">
                   Review due {{ new Date(plan.nextCheckoutAt).toLocaleDateString('en-NG') }}
                   <template v-if="plan.deliveryLabel"> · {{ plan.deliveryLabel }}</template>
@@ -1121,7 +1264,7 @@ const tabClass = (on: boolean) =>
         </div>
         <label class="mt-6 block text-sm font-bold text-os-fg">Delivery address<textarea v-model="checkoutForm.address" required minlength="5" rows="4" :class="fieldClass" class="py-3" /></label>
         <label class="mt-4 block text-sm font-bold text-os-fg">Delivery phone<input v-model="checkoutForm.phone" type="tel" :class="fieldClass" /></label>
-        <div v-if="deliverySlots.length" class="mt-4 grid gap-4 sm:grid-cols-2">
+        <div v-if="checkoutDeliverySlots.length" class="mt-4 grid gap-4 sm:grid-cols-2">
           <label class="block text-sm font-bold text-os-fg">
             Delivery window
             <select
@@ -1131,16 +1274,19 @@ const tabClass = (on: boolean) =>
               @change="selectDeliverySlot(checkoutForm.deliverySlotId)"
             >
               <option value="" disabled>Select a delivery window</option>
-              <option v-for="slot in deliverySlots" :key="slot.id" :value="slot.id">
-                {{ slot.label }} · {{ slot.startTime }}–{{ slot.endTime }}
+              <option v-for="slot in checkoutDeliverySlots" :key="slot.id" :value="slot.id">
+                {{ slot.label }} · {{ formatDeliveryHours(slot) }}<template v-if="deliveryTimeZone"> WAT</template>
               </option>
             </select>
           </label>
           <label class="block text-sm font-bold text-os-fg">
             Delivery date
-            <input v-model="checkoutForm.deliveryDate" required type="date" :class="fieldClass" />
+            <input v-model="checkoutForm.deliveryDate" required type="date" :min="checkoutDeliverySlot?.nextDeliveryDate ?? undefined" :class="fieldClass" />
           </label>
         </div>
+        <p v-if="checkoutWindowMissing && !checkoutError" class="mt-4 text-sm leading-6 text-slate-400">
+          Check the current delivery windows and choose a date before placing your order.
+        </p>
         <label class="mt-4 block text-sm font-bold text-os-fg">
           Repeat this basket <span class="font-normal text-slate-500">(optional)</span>
           <select v-model="checkoutForm.recurrenceFrequency" :class="fieldClass">
@@ -1157,7 +1303,11 @@ const tabClass = (on: boolean) =>
           <span class="font-bold">Estimated total</span>
           <strong class="text-xl text-farm-green">{{ formatShopPrice(cartTotalKobo) }}</strong>
         </div>
-        <button type="submit" class="mt-5 w-full rounded-xl bg-farm-green py-3 text-sm font-bold text-white" :disabled="busy">{{ busy ? 'Opening secure checkout…' : 'Review payment & place order' }}</button>
+        <p v-if="checkoutError" role="alert" class="mt-4 rounded-xl border border-red-400/35 bg-red-400/10 p-4 text-sm leading-6 text-red-200">{{ checkoutError }}</p>
+        <button v-if="checkoutNeedsRefresh || checkoutWindowMissing" type="button" class="mt-2 min-h-11 font-bold text-farm-green underline" :disabled="refreshingCatalog" @click="refreshCatalog">
+          {{ refreshingCatalog ? 'Checking…' : 'Check availability' }}
+        </button>
+        <button type="submit" class="mt-5 w-full rounded-xl bg-farm-green py-3 text-sm font-bold text-white disabled:opacity-50" :disabled="busy || refreshingCatalog || checkoutWindowMissing || familyBasketNeedsReview">{{ busy ? 'Opening secure checkout…' : 'Review payment & place order' }}</button>
       </form>
     </div>
   </div>
